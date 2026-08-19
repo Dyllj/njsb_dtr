@@ -23,7 +23,7 @@ const Nav = ({
       href={href}
       onClick={onClick}
       {...props}
-      className={`flex items-center gap-2 px-4 py-2 text-zinc-zinc-300 transition-all duration-300 font-Strait font-bold group relative overflow-hidden rounded-lg hover:text-amber-600 ${className}`.trim()}
+      className={`flex items-center gap-2 px-4 py-2 text-zinc-300 transition-all duration-300 font-Strait font-bold group relative overflow-hidden rounded-lg hover:text-white ${className}`.trim()}
     >
       <span className="relative z-10 transition-all duration-300 group-hover:translate-x-0.5">
         {children}
