@@ -21,7 +21,7 @@ function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 z-20 h-screen w-52 bg-red-800 p-4 text-white">
       <h2 className="text-lg justify-center m-auto font-semibold">NJSB</h2>
-      <nav className="mt-4 space-y-2">
+      <nav className="mt-4 space-y-2" >
         {navItems.map(({ label, icon, to }) => (
           <Nav key={label} to={to} icon={icon}>
             {label}
