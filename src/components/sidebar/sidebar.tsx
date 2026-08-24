@@ -2,7 +2,6 @@ import Nav from '../navs/navs';
 import {
   BarChart3,
   CalendarClock,
-  CalendarRange,
   Home,
   Settings,
   Users,
@@ -13,7 +12,6 @@ function Sidebar() {
     { label: 'Dashboard', icon: Home, to: '/' },
     { label: 'Interns', icon: Users, to: '/interns' },
     { label: 'Attendance', icon: CalendarClock, to: '/attendance' },
-    { label: 'Schedule', icon: CalendarRange, to: '/schedule' },
     { label: 'Report', icon: BarChart3, to: '/report' },
     { label: 'Settings', icon: Settings, to: '/settings' },
   ];
