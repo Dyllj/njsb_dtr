@@ -1,4 +1,5 @@
-import { useMemo, useState, ChangeEvent } from 'react';
+import { useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
