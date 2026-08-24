@@ -85,8 +85,8 @@ export default function Attendance() {
   }
 
   return (
-    <div className="w-100% min-h-screen p-4 bg-slate-50">
-      <div className="max-w-screen mx-auto">
+    <div className="h-screen p-4">
+      <div className="w-full mx-auto h-full flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Attendance</h2>
           <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function Attendance() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full w-full">
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <div className="text-lg font-medium">
               {viewDate.toLocaleString(undefined, { month: 'long' })} {viewDate.getFullYear()}
@@ -110,12 +110,14 @@ export default function Attendance() {
             <div className="text-sm text-slate-500">Click a date to toggle attendance</div>
           </div>
 
-          <div className="px-3 pb-6">
+          <div className="px-3 pb-6 flex-1 flex flex-col">
             <div className="grid grid-cols-7 gap-1 mt-3 text-center">
               {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
                 <div key={d} className="text-xs font-medium text-slate-600 py-2">{d}</div>
               ))}
+            </div>
 
+            <div className="grid grid-cols-7 gap-1 mt-2 flex-1" style={{gridAutoRows: '1fr'}}>
               {matrix.map((week, wi) => (
                 <React.Fragment key={wi}>
                   {week.map((day, di) => {
@@ -124,9 +126,9 @@ export default function Attendance() {
                     const isSelected = selectedDates.some((s) => sameDay(s, day));
                     return (
                       <button
-                        key={di}
+                        key={`${wi}-${di}`}
                         onClick={() => toggleDate(day)}
-                        className={`py-3 rounded-md focus:outline-none transition-colors border ${inCurrentMonth ? 'bg-white' : 'bg-slate-100 text-slate-400'} ${isSelected ? 'bg-blue-600 text-white' : ''} ${isToday && !isSelected ? 'ring-2 ring-blue-300' : ''}`}
+                        className={`w-full h-full py-3 rounded-md focus:outline-none transition-colors ${inCurrentMonth ? 'bg-white' : 'bg-slate-100 text-slate-400'} ${isSelected ? 'bg-blue-600 text-white' : ''} ${isToday && !isSelected ? 'ring-2 ring-blue-300' : ''}`}
                       >
                         <div className="text-sm font-medium">{day.getDate()}</div>
                       </button>
@@ -135,21 +137,6 @@ export default function Attendance() {
                 </React.Fragment>
               ))}
             </div>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <h3 className="text-lg font-medium">Selected dates</h3>
-          <div className="mt-2 text-sm text-slate-700">
-            {selectedDates.length === 0 ? (
-              <div className="text-slate-500">No dates selected.</div>
-            ) : (
-              <ul className="list-disc ml-5">
-                {selectedDates.sort((a,b) => +a - +b).map((d) => (
-                  <li key={d.toISOString()}>{d.toLocaleDateString()}</li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
       </div>
