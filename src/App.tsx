@@ -1,15 +1,31 @@
-import { Routes, Route } from 'react-router-dom'
-import './App.css'
-import Header from './components/header/header'
-import Sidebar from './components/sidebar/sidebar'
-import Dashboard from './pages/dashboard/dashboard'
-import Interns from './pages/interns/interns'
-import Attendance from './pages/attendance/attendance'
-import Schedule from './pages/schedule/schedule'
-import Report from './pages/report/report'
-import Settings from './pages/settings/settings'
+import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import './App.css';
+import Header from './components/header/header';
+import Sidebar from './components/sidebar/sidebar';
+import Dashboard from './pages/dashboard/dashboard';
+import Interns from './pages/interns/interns';
+import Attendance from './pages/attendance/attendance';
+import Schedule from './pages/schedule/schedule';
+import Report from './pages/report/report';
+import Settings from './pages/settings/settings';
+import LoginPage from './pages/loginPage/loginPage';
+
+const AUTH_KEY = 'njsb_dtr_admin_logged_in';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem(AUTH_KEY) === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(AUTH_KEY, String(isAuthenticated));
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <>
       <Header />
@@ -25,7 +41,7 @@ function App() {
         </Routes>
       </main>
     </>
-  )
+  );
 }
 
 export default App

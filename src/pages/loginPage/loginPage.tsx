@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface Signup1Props {
+const DEV_ADMIN_EMAIL = 'admin@njsb.com';
+const DEV_ADMIN_PASSWORD = 'admin123';
+
+interface LoginPageProps {
+  onLogin?: () => void;
   heading?: string;
   logo?: {
     url: string;
@@ -10,8 +15,6 @@ interface Signup1Props {
     title?: string;
   };
   buttonText?: string;
-  signupText?: string;
-  signupUrl?: string;
   className?: string;
 }
 
@@ -22,14 +25,29 @@ const defaultLogo = {
   title: 'shadcnblocks.com',
 };
 
-function Signup1({
-  heading = 'Sign up',
+function LoginPage({
+  onLogin,
+  heading = 'Admin Login',
   logo = defaultLogo,
-  buttonText = 'Create Account',
-  signupText = 'Already a user?',
-  signupUrl = 'https://shadcnblocks.com',
+  buttonText = 'Login',
   className,
-}: Signup1Props) {
+}: LoginPageProps) {
+  const [email, setEmail] = useState(DEV_ADMIN_EMAIL);
+  const [password, setPassword] = useState(DEV_ADMIN_PASSWORD);
+  const [error, setError] = useState('');
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (email.trim() === DEV_ADMIN_EMAIL && password === DEV_ADMIN_PASSWORD) {
+      setError('');
+      onLogin?.();
+      return;
+    }
+
+    setError('Invalid email or password. Use the admin demo credentials.');
+  };
+
   return (
     <section className={cn('flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8', className)}>
       <div className="w-full max-w-sm">
@@ -38,12 +56,14 @@ function Signup1({
             <img src={logo.src} alt={logo.alt} title={logo.title} className="h-10 dark:invert" />
           </a>
 
-          <div className="w-full rounded-xl border border-slate-200 bg-white px-5 py-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="w-full rounded-xl border border-slate-200 bg-white px-5 py-6 shadow-sm">
             {heading && <h1 className="mb-4 text-center text-xl font-semibold tracking-tight text-slate-900">{heading}</h1>}
 
             <div className="space-y-3">
               <input
                 type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="Email"
                 aria-label="Email"
                 className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
@@ -51,38 +71,30 @@ function Signup1({
               />
               <input
                 type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 placeholder="Password"
                 aria-label="Password"
                 className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                 required
               />
-              <input
-                type="password"
-                placeholder="Confirm Password"
-                aria-label="Confirm password"
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                required
-              />
+
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              <div className="rounded-md bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">
+                Demo admin: admin@njsb.com / admin123
+              </div>
 
               <Button type="submit" className="mt-1 h-10 w-full rounded-md bg-slate-900 text-white hover:bg-slate-800">
                 {buttonText}
               </Button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-1 text-sm text-slate-500">
-            <p>{signupText}</p>
-            <a href={signupUrl} className="font-medium text-slate-900 transition hover:text-slate-700 hover:underline">
-              Login
-            </a>
-          </div>
+          </form>
         </div>
       </div>
     </section>
   );
 }
 
-export { Signup1 };
-export default function LoginPage() {
-  return <Signup1 />;
-}
+export { LoginPage };
+export default LoginPage;
