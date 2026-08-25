@@ -1,5 +1,14 @@
-import React, { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, CalendarCheck2 } from 'lucide-react';
+
+type DayAttendance = {
+  present: number;
+  absent: number;
+  total: number;
+};
+
+const TOTAL_INTERNS = 120;
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -12,26 +21,27 @@ function addDays(date: Date, days: number) {
 }
 
 function sameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function getCalendarMatrix(year: number, month: number) {
-  // returns array of weeks; each week is array of Date objects (7 days)
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
-  const startDay = first.getDay(); // 0 (Sun) - 6 (Sat)
+  const startDay = first.getDay();
   const daysInMonth = last.getDate();
 
   const matrix: Date[][] = [];
   let week: Date[] = [];
 
-  // Fill previous month's tail days
   const prevMonthEnd = new Date(year, month, 0).getDate();
   for (let i = startDay - 1; i >= 0; i--) {
     week.push(new Date(year, month - 1, prevMonthEnd - i));
   }
 
-  // Fill current month
   for (let d = 1; d <= daysInMonth; d++) {
     week.push(new Date(year, month, d));
     if (week.length === 7) {
@@ -40,14 +50,12 @@ function getCalendarMatrix(year: number, month: number) {
     }
   }
 
-  // Fill next month's head days
   let nextDay = 1;
   while (week.length > 0 && week.length < 7) {
     week.push(new Date(year, month + 1, nextDay++));
   }
   if (week.length === 7) matrix.push(week);
 
-  // Ensure matrix has at least 6 weeks to keep layout stable on all months
   while (matrix.length < 6) {
     const lastWeek = matrix[matrix.length - 1];
     const base = lastWeek ? lastWeek[6] : new Date(year, month, daysInMonth);
@@ -59,12 +67,39 @@ function getCalendarMatrix(year: number, month: number) {
   return matrix;
 }
 
+// Deterministic pseudo-random attendance so numbers stay stable while browsing months.
+// Swap this out for a real lookup once the backend is wired up.
+function hashDate(date: Date) {
+  const str = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getAttendance(date: Date, today: Date): DayAttendance | null {
+  const dayOfWeek = date.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const isFuture = date > today;
+  if (isWeekend || isFuture) return null;
+
+  const seed = hashDate(date);
+  const absent = 3 + (seed % 13); // 3-15 absentees out of TOTAL_INTERNS
+  return { present: TOTAL_INTERNS - absent, absent, total: TOTAL_INTERNS };
+}
+
 export default function Attendance() {
   const today = new Date();
   const [viewDate, setViewDate] = useState<Date>(startOfMonth(today));
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
-  const matrix = useMemo(() => getCalendarMatrix(viewDate.getFullYear(), viewDate.getMonth()), [viewDate]);
+  const matrix = useMemo(
+    () => getCalendarMatrix(viewDate.getFullYear(), viewDate.getMonth()),
+    [viewDate]
+  );
 
   function prevMonth() {
     setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
@@ -74,69 +109,162 @@ export default function Attendance() {
   }
   function goToday() {
     setViewDate(startOfMonth(today));
-  }
-
-  function toggleDate(date: Date) {
-    setSelectedDates((prev) => {
-      const exists = prev.find((p) => sameDay(p, date));
-      if (exists) return prev.filter((p) => !sameDay(p, date));
-      return [...prev, date];
-    });
+    setSelectedDate(today);
   }
 
   return (
-    <div className="h-screen p-4">
-      <div className="w-full mx-auto h-full flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Attendance</h2>
-          <div className="flex items-center gap-2">
-            <button onClick={prevMonth} aria-label="Previous month" className="p-2 rounded-md hover:bg-slate-100 text-slate-700">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={goToday} aria-label="Refresh month" className="p-2 rounded-md hover:bg-slate-100 text-slate-700">
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <button onClick={nextMonth} aria-label="Next month" className="p-2 rounded-md hover:bg-slate-100 text-slate-700">
-              <ChevronRight className="w-4 h-4" />
-            </button>
+    <div className="p-4 md:p-6">
+      <div className="flex w-full flex-col">
+        {/* Page header */}
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">Attendance</h2>
+            <p className="text-sm text-slate-500">Monthly overview of intern check-ins</p>
           </div>
+          <button
+            onClick={goToday}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-sky-300 hover:text-sky-600"
+          >
+            Today
+          </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full w-full">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <div className="text-lg font-medium">
+        {/* Calendar card */}
+        <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {/* Calendar header */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <CalendarCheck2 className="h-5 w-5 text-sky-600" />
               {viewDate.toLocaleString(undefined, { month: 'long' })} {viewDate.getFullYear()}
             </div>
-            <div className="text-sm text-slate-500">Click a date to toggle attendance</div>
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-1">
+              <button
+                onClick={prevMonth}
+                aria-label="Previous month"
+                className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={nextMonth}
+                aria-label="Next month"
+                className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="px-3 pb-6 flex-1 flex flex-col">
-            <div className="grid grid-cols-7 gap-1 mt-3 text-center">
-              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-                <div key={d} className="text-xs font-medium text-slate-600 py-2">{d}</div>
-              ))}
-            </div>
+          {/* Weekday labels */}
+          <div className="grid grid-cols-7 border-b border-slate-100 px-3 pt-3">
+            {WEEKDAY_LABELS.map((label) => (
+              <div
+                key={label}
+                className="pb-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400"
+              >
+                {label}
+              </div>
+            ))}
+          </div>
 
-            <div className="grid grid-cols-7 gap-1 mt-2 flex-1" style={{gridAutoRows: '1fr'}}>
-              {matrix.map((week, wi) => (
-                <React.Fragment key={wi}>
-                  {week.map((day, di) => {
-                    const inCurrentMonth = day.getMonth() === viewDate.getMonth();
-                    const isToday = sameDay(day, today);
-                    const isSelected = selectedDates.some((s) => sameDay(s, day));
-                    return (
-                      <button
-                        key={`${wi}-${di}`}
-                        onClick={() => toggleDate(day)}
-                        className={`w-full h-full py-3 rounded-md focus:outline-none transition-colors ${inCurrentMonth ? 'bg-white' : 'bg-slate-100 text-slate-400'} ${isSelected ? 'bg-blue-600 text-white' : ''} ${isToday && !isSelected ? 'ring-2 ring-blue-300' : ''}`}
+          {/* Calendar grid */}
+          <div className="grid auto-rows-21 grid-cols-7 gap-1.5 p-3">
+            {matrix.map((week, wi) =>
+              week.map((day, di) => {
+                const inCurrentMonth = day.getMonth() === viewDate.getMonth();
+                const isToday = sameDay(day, today);
+                const isSelected = selectedDate !== null && sameDay(day, selectedDate);
+                const isHovered = hoveredDate !== null && sameDay(day, hoveredDate);
+                const attendance = getAttendance(day, today);
+                const isWeekendCol = di === 0 || di === 6;
+                const showAbove = wi >= matrix.length - 2;
+
+                return (
+                  <div key={`${wi}-${di}`} className="relative">
+                    <button
+                      onClick={() => setSelectedDate(day)}
+                      onMouseEnter={() => setHoveredDate(day)}
+                      onMouseLeave={() => setHoveredDate(null)}
+                      className={[
+                        'flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-lg text-sm transition-colors',
+                        inCurrentMonth ? 'text-slate-700' : 'text-slate-300',
+                        isWeekendCol && inCurrentMonth && !isSelected ? 'bg-slate-50' : '',
+                        isSelected ? 'bg-sky-600 text-white' : 'hover:bg-slate-100',
+                        isToday && !isSelected ? 'ring-1 ring-inset ring-sky-400' : '',
+                      ].join(' ')}
+                    >
+                      <span className={`font-medium ${isToday && !isSelected ? 'text-sky-600' : ''}`}>
+                        {day.getDate()}
+                      </span>
+                      {attendance && (
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isSelected
+                              ? 'bg-white'
+                              : attendance.absent <= 5
+                              ? 'bg-emerald-500'
+                              : 'bg-amber-500'
+                          }`}
+                        />
+                      )}
+                    </button>
+
+                    {/* Hover tooltip */}
+                    {isHovered && attendance && (
+                      <div
+                        className={[
+                          'pointer-events-none absolute z-20 w-40 rounded-lg border border-slate-200 bg-white p-3 shadow-lg',
+                          showAbove ? 'bottom-full mb-2' : 'top-full mt-2',
+                          di === 0 ? 'left-0' : di === 6 ? 'right-0' : 'left-1/2 -translate-x-1/2',
+                        ].join(' ')}
                       >
-                        <div className="text-sm font-medium">{day.getDate()}</div>
-                      </button>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
-            </div>
+                        <p className="mb-2 text-xs font-semibold text-slate-500">
+                          {day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5 text-slate-600">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            Present
+                          </span>
+                          <span className="font-semibold text-slate-900">{attendance.present}</span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5 text-slate-600">
+                            <span className="h-2 w-2 rounded-full bg-rose-500" />
+                            Absent
+                          </span>
+                          <span className="font-semibold text-slate-900">{attendance.absent}</span>
+                        </div>
+                      </div>
+                    )}
+                    {isHovered && !attendance && (
+                      <div
+                        className={[
+                          'pointer-events-none absolute z-20 w-36 rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg',
+                          showAbove ? 'bottom-full mb-2' : 'top-full mt-2',
+                          di === 0 ? 'left-0' : di === 6 ? 'right-0' : 'left-1/2 -translate-x-1/2',
+                        ].join(' ')}
+                      >
+                        {day > today ? 'No data yet' : 'No schedule'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Low absences
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-amber-500" /> Multiple absences
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full border-2 border-sky-400" /> Today
+            </span>
           </div>
         </div>
       </div>
