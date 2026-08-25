@@ -65,22 +65,22 @@ function EditAdmins() {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="flex flex-col gap-3 pt-2">
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Admins</h3>
-        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
           {admins.length} users
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
+      <form onSubmit={handleSubmit} className="grid gap-2.5 md:grid-cols-2 w-50">
         <input
           value={form.name}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
             setForm((current) => ({ ...current, name: event.target.value }))
           }
           placeholder="Admin name"
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 md:col-span-2"
+          className="rounded-md border border-slate-200 px-2.5 py-2 text-sm outline-none transition focus:border-slate-400 md:col-span-2"
         />
         <input
           value={form.email}
@@ -88,7 +88,7 @@ function EditAdmins() {
             setForm((current) => ({ ...current, email: event.target.value }))
           }
           placeholder="Email"
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 md:col-span-2"
+          className="rounded-md border border-slate-200 px-2.5 py-2 text-sm outline-none transition focus:border-slate-400 md:col-span-2"
         />
         <input
           value={form.role}
@@ -96,37 +96,46 @@ function EditAdmins() {
             setForm((current) => ({ ...current, role: event.target.value }))
           }
           placeholder="Role"
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          className="rounded-md border border-slate-200 px-2.5 py-2 text-sm outline-none transition focus:border-slate-400"
         />
         <select
           value={form.status}
           onChange={(event: ChangeEvent<HTMLSelectElement>) =>
             setForm((current) => ({ ...current, status: event.target.value as 'Active' | 'Inactive' }))
           }
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          className="rounded-md border border-slate-200 px-2.5 py-2 text-sm outline-none transition focus:border-slate-400"
         >
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
-        <button type="submit" className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 md:col-span-2">
+        <button
+          type="submit"
+          className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 md:col-span-2"
+        >
           {form.id ? 'Update Admin' : 'Add Admin'}
         </button>
       </form>
 
-      <div className="mt-4 space-y-2">
+      <div className="space-y-2">
         {admins.map((admin) => (
-          <div key={admin.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-            <div>
-              <p className="font-medium text-slate-900">{admin.name}</p>
-              <p className="text-xs text-slate-500">
+          <div key={admin.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-2.5 py-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-slate-900">{admin.name}</p>
+              <p className="truncate text-[11px] text-slate-500">
                 {admin.email} • {admin.role}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => handleEdit(admin)} className="text-xs font-medium text-slate-700 underline-offset-2 hover:underline">
+            <div className="flex shrink-0 gap-2 pl-2">
+              <button
+                onClick={() => handleEdit(admin)}
+                className="text-[11px] font-medium text-slate-700 transition hover:text-slate-900"
+              >
                 Edit
               </button>
-              <button onClick={() => handleDelete(admin.id)} className="text-xs font-medium text-red-600 hover:underline">
+              <button
+                onClick={() => handleDelete(admin.id)}
+                className="text-[11px] font-medium text-red-600 transition hover:text-red-700"
+              >
                 Delete
               </button>
             </div>

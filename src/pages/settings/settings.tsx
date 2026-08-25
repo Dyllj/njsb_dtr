@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import EditAdmins from './settingsPages/editAdmins';
 import EditInterns from './settingsPages/editInterns';
@@ -13,6 +14,14 @@ const settingsNav = [
 
 function Settings() {
   const [activeTab, setActiveTab] = useState<(typeof settingsNav)[number]['id']>('admin');
+  const [direction, setDirection] = useState(1);
+
+  const handleTabChange = (nextTab: (typeof settingsNav)[number]['id']) => {
+    const currentIndex = settingsNav.findIndex((item) => item.id === activeTab);
+    const nextIndex = settingsNav.findIndex((item) => item.id === nextTab);
+    setDirection(nextIndex >= currentIndex ? 1 : -1);
+    setActiveTab(nextTab);
+  };
 
   const renderActiveSection = () => {
     switch (activeTab) {
@@ -40,7 +49,7 @@ function Settings() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabChange(item.id)}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition ${
                   isActive
                     ? 'bg-slate-900 text-white'
@@ -54,7 +63,20 @@ function Settings() {
         </div>
       </nav>
 
-      <div className="w-full">{renderActiveSection()}</div>
+      <div className="relative w-full overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="w-full"
+          >
+            {renderActiveSection()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
