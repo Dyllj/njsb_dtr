@@ -73,7 +73,7 @@ function EditAdmins() {
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-2.5 md:grid-cols-2 w-50">
+      <form onSubmit={handleSubmit} className="grid gap-2.5 md:grid-cols-2">
         <input
           value={form.name}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
