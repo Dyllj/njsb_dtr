@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface HolidayMap {
   [date: string]: string;
@@ -10,6 +13,7 @@ const initialHolidays: HolidayMap = {
 };
 
 const calendarDays = Array.from({ length: 31 }, (_, index) => index + 1);
+const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function CalendarSettings() {
   const [selectedMonth, setSelectedMonth] = useState('2026-08');
@@ -37,27 +41,29 @@ function CalendarSettings() {
     });
   };
 
+  const holidayEntries = Object.entries(holidays);
+
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Calendar Settings</h3>
-        <button
-          type="button"
-          onClick={() => setSelectedMonth('2026-08')}
-          className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-        >
-          August 2026
-        </button>
+    <section className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold">Calendar Settings</h3>
+          <p className="text-xs text-muted-foreground">Click a date to mark or unmark a holiday.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{holidayEntries.length} holidays</Badge>
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectedMonth('2026-08')}>
+            {monthLabel}
+          </Button>
+        </div>
       </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-700">{monthLabel}</span>
-        <span className="text-xs text-slate-500">Click a date to mark or unmark a holiday.</span>
-      </div>
-
-      <div className="grid grid-cols-7 gap-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} className="text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="grid grid-cols-7 gap-1.5">
+        {weekdayLabels.map((day) => (
+          <div
+            key={day}
+            className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {day}
           </div>
         ))}
@@ -71,12 +77,13 @@ function CalendarSettings() {
               key={dateKey}
               type="button"
               onClick={() => toggleHoliday(dayNumber)}
-              className={`relative flex h-12 items-center justify-center rounded-md border text-sm transition ${
-                isHoliday
-                  ? 'border-red-200 bg-red-50 text-red-700 line-through'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-              }`}
               title={isHoliday ? holidays[dateKey] : 'Mark as holiday'}
+              className={cn(
+                'flex aspect-square items-center justify-center rounded-md border text-sm transition-colors',
+                isHoliday
+                  ? 'border-destructive/30 bg-destructive/10 text-destructive line-through'
+                  : 'border-border bg-background text-foreground hover:bg-muted'
+              )}
             >
               {dayNumber}
             </button>
@@ -84,20 +91,25 @@ function CalendarSettings() {
         })}
       </div>
 
-      <div className="mt-4 rounded-lg bg-slate-50 p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Holiday list</p>
-        <div className="space-y-1">
-          {Object.entries(holidays).length === 0 ? (
-            <p className="text-sm text-slate-500">No holidays marked.</p>
-          ) : (
-            Object.entries(holidays).map(([date, label]) => (
-              <div key={date} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1 text-sm">
-                <span className="font-medium text-slate-700">{date}</span>
-                <span className="text-slate-500">{label}</span>
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Holiday list
+        </p>
+        {holidayEntries.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No holidays marked.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {holidayEntries.map(([date, label]) => (
+              <div
+                key={date}
+                className="flex items-center justify-between rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
+              >
+                <span className="font-medium text-foreground">{date}</span>
+                <span className="text-muted-foreground">{label}</span>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
