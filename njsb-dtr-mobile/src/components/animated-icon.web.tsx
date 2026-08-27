@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- require() is the standard way to load images in React Native */
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';

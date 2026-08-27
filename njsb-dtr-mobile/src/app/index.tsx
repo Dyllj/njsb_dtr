@@ -9,14 +9,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LogIn } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 
 const DEV_INTERN_ID = 'INT-0001';
 const DEV_PASSWORD = 'intern123';
 
 export default function HomeScreen() {
+  const theme = useTheme();
   const [internId, setInternId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +31,7 @@ export default function HomeScreen() {
     }
 
     if (internId !== DEV_INTERN_ID || password !== DEV_PASSWORD) {
-      setError(`Invalid credentials. Use the test credentials below.`);
+      setError('Invalid credentials. Use the test credentials shown below.');
       return;
     }
 
@@ -43,10 +46,12 @@ export default function HomeScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.content}>
           <View style={styles.brand}>
-            <View style={styles.logo}>
-              <ThemedText style={styles.logoText}>DTR</ThemedText>
+            <View style={[styles.logo, { backgroundColor: theme.primary }]}>
+              <LogIn color={theme.primaryForeground} size={32} strokeWidth={2.5} />
             </View>
-            <ThemedText type="title" style={styles.title}>Intern Timekeeping</ThemedText>
+            <ThemedText type="title" style={styles.title}>
+              Intern Timekeeping
+            </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
               Sign in to record your attendance
             </ThemedText>
@@ -60,24 +65,41 @@ export default function HomeScreen() {
               onChangeText={setInternId}
               placeholder="e.g. INT-0001"
               placeholderTextColor="#8d9299"
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.border, color: theme.text }]}
               value={internId}
             />
+
             <ThemedText type="smallBold">Password</ThemedText>
             <TextInput
               onChangeText={setPassword}
               placeholder="Enter your password"
               placeholderTextColor="#8d9299"
               secureTextEntry
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.border, color: theme.text }]}
               value={password}
             />
+
             {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
-            <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-              Test credentials: {DEV_INTERN_ID} / {DEV_PASSWORD}
-            </ThemedText>
-            <Pressable onPress={handleLogin} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-              <ThemedText style={styles.buttonText}>Sign in</ThemedText>
+
+            <ThemedView type="backgroundElement" style={styles.credentialsCard}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Test credentials
+              </ThemedText>
+              <ThemedText type="smallBold" style={styles.credentialsText}>
+                {DEV_INTERN_ID} / {DEV_PASSWORD}
+              </ThemedText>
+            </ThemedView>
+
+            <Pressable
+              onPress={handleLogin}
+              style={({ pressed }) => [
+                styles.button,
+                { backgroundColor: theme.primary },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
+                Sign in
+              </ThemedText>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -107,17 +129,11 @@ const styles = StyleSheet.create({
   },
   logo: {
     alignItems: 'center',
-    backgroundColor: '#1769aa',
-    borderRadius: 18,
-    height: 72,
+    borderRadius: 20,
+    height: 80,
     justifyContent: 'center',
-    marginBottom: 20,
-    width: 72,
-  },
-  logoText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
+    marginBottom: 24,
+    width: 80,
   },
   title: {
     fontSize: 30,
@@ -128,39 +144,43 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   form: {
-    gap: 10,
+    gap: 12,
   },
   input: {
-    borderColor: '#d7dbe0',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    color: '#111',
     fontSize: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   error: {
     color: '#c62828',
-    marginBottom: 4,
+    marginTop: 2,
   },
-  hint: {
-    alignSelf: 'center',
-    marginTop: 8,
+  credentialsCard: {
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  credentialsText: {
+    fontFamily: 'monospace',
+    fontSize: 14,
   },
   button: {
     alignItems: 'center',
-    backgroundColor: '#1769aa',
-    borderRadius: 10,
-    marginTop: 8,
-    paddingVertical: 15,
+    borderRadius: 12,
+    marginTop: 16,
+    paddingVertical: 16,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.85,
   },
 });

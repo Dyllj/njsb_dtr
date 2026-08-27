@@ -1,26 +1,49 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { BarChart3, Clock, ScanLine } from 'lucide-react-native';
+import { Tabs } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const theme = useTheme();
 
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="scan">
-        <NativeTabs.Trigger.Label>Scan</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="hours">
-        <NativeTabs.Trigger.Label>Hours</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="report">
-        <NativeTabs.Trigger.Label>Report</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.card,
+          borderTopColor: theme.border,
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: 10,
+          height: 68,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: 600,
+          marginTop: 2,
+        },
+        headerShown: false,
+      }}>
+      <Tabs.Screen
+        name="scan"
+        options={{
+          tabBarIcon: ({ color }) => <ScanLine color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="hours"
+        options={{
+          tabBarIcon: ({ color }) => <Clock color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="report"
+        options={{
+          tabBarIcon: ({ color }) => <BarChart3 color={color} size={22} />,
+        }}
+      />
+    </Tabs>
   );
 }
