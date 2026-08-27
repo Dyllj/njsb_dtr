@@ -13,6 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
+const DEV_INTERN_ID = 'INT-0001';
+const DEV_PASSWORD = 'intern123';
+
 export default function HomeScreen() {
   const [internId, setInternId] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +24,11 @@ export default function HomeScreen() {
   function handleLogin() {
     if (!internId.trim() || !password) {
       setError('Enter your intern ID and password to continue.');
+      return;
+    }
+
+    if (internId !== DEV_INTERN_ID || password !== DEV_PASSWORD) {
+      setError(`Invalid credentials. Use the test credentials below.`);
       return;
     }
 
@@ -65,6 +73,9 @@ export default function HomeScreen() {
               value={password}
             />
             {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
+            <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
+              Test credentials: {DEV_INTERN_ID} / {DEV_PASSWORD}
+            </ThemedText>
             <Pressable onPress={handleLogin} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
               <ThemedText style={styles.buttonText}>Sign in</ThemedText>
             </Pressable>
@@ -132,6 +143,10 @@ const styles = StyleSheet.create({
   error: {
     color: '#c62828',
     marginBottom: 4,
+  },
+  hint: {
+    alignSelf: 'center',
+    marginTop: 8,
   },
   button: {
     alignItems: 'center',
