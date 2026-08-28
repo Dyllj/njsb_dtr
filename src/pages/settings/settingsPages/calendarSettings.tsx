@@ -3,21 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-interface HolidayMap {
-  [date: string]: string;
-}
-
-const initialHolidays: HolidayMap = {
-  '2026-08-21': 'National Heroes Day',
-  '2026-08-25': 'Special Non-Working Holiday',
-};
+import { useHolidays } from '@/lib/hooks/useSupabaseData';
 
 const calendarDays = Array.from({ length: 31 }, (_, index) => index + 1);
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function CalendarSettings() {
+  const { holidays, loading, error, toggle } = useHolidays();
   const [selectedMonth, setSelectedMonth] = useState('2026-08');
-  const [holidays, setHolidays] = useState<HolidayMap>(initialHolidays);
 
   const monthLabel = useMemo(() => {
     const [year, month] = selectedMonth.split('-').map(Number);
@@ -29,19 +22,21 @@ function CalendarSettings() {
 
   const toggleHoliday = (day: number) => {
     const dateKey = `${selectedMonth}-${String(day).padStart(2, '0')}`;
+    const isHoliday = Boolean(holidays[dateKey]);
+    const holidayName = isHoliday ? holidays[dateKey] : 'Holiday';
 
-    setHolidays((current) => {
-      if (current[dateKey]) {
-        const next = { ...current };
-        delete next[dateKey];
-        return next;
-      }
-
-      return { ...current, [dateKey]: 'Holiday' };
-    });
+    toggle(dateKey, holidayName, isHoliday);
   };
 
   const holidayEntries = Object.entries(holidays);
+
+  if (loading) {
+    return (
+      <section className="flex items-center justify-center py-12">
+        <div className="text-sm text-muted-foreground">Loading calendar...</div>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -57,6 +52,10 @@ function CalendarSettings() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive">Failed to load holidays: {error.message}</p>
+      )}
 
       <div className="grid grid-cols-7 gap-1.5">
         {weekdayLabels.map((day) => (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,38 +20,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export interface InternRecord {
-  id: string;
-  firstName: string;
-  lastName: string;
-  department: string;
-  status: 'Active' | 'Inactive';
-}
+import { useInterns } from '@/lib/hooks/useSupabaseData';
+import type { Intern } from '@/lib/services/internService';
 
-const initialInterns: InternRecord[] = [
-  { id: 'I-001', firstName: 'Alice', lastName: 'Garcia', department: 'HR', status: 'Active' },
-  { id: 'I-002', firstName: 'Bob', lastName: 'Lee', department: 'Operations', status: 'Active' },
-  { id: 'I-003', firstName: 'Cara', lastName: 'Nguyen', department: 'Finance', status: 'Inactive' },
-];
+export type InternRecord = Intern;
 
 const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active' };
 
-function getNextInternId(interns: InternRecord[]) {
-  const nextNumber = interns.reduce((highest, intern) => {
-    const number = Number(intern.id.replace(/^I-/, ''));
-    return Number.isInteger(number) ? Math.max(highest, number) : highest;
-  }, 0) + 1;
-
-  return `I-${String(nextNumber).padStart(3, '0')}`;
-}
-
 function EditInterns() {
-  const [interns, setInterns] = useState<InternRecord[]>(initialInterns);
+  const { interns, loading, error, create, update, remove } = useInterns();
   const [form, setForm] = useState<InternRecord>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(form.id);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     const firstName = form.firstName.trim();
@@ -60,36 +43,39 @@ function EditInterns() {
 
     if (!firstName || !lastName || !department) return;
 
-    const nextIntern: InternRecord = {
-      ...form,
-      id: form.id || getNextInternId(interns),
-      firstName,
-      lastName,
-      department,
-    };
+    setSubmitting(true);
 
-    setInterns((current) => {
-      if (form.id) {
-        return current.map((item) => (item.id === form.id ? nextIntern : item));
+    try {
+      if (isEditing) {
+        await update(form.id, { firstName, lastName, department, status: form.status });
+      } else {
+        await create({ firstName, lastName, department, status: form.status });
       }
-
-      return [nextIntern, ...current];
-    });
-
-    setForm(emptyForm);
+      setForm(emptyForm);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (intern: InternRecord) => {
     setForm(intern);
   };
 
-  const handleDelete = (id: string) => {
-    setInterns((current) => current.filter((item) => item.id !== id));
-
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this intern? This cannot be undone.')) return;
+    await remove(id);
     if (form.id === id) {
       setForm(emptyForm);
     }
   };
+
+  if (loading) {
+    return (
+      <section className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -97,6 +83,10 @@ function EditInterns() {
         <h3 className="text-base font-semibold">Interns</h3>
         <Badge variant="secondary">{interns.length} records</Badge>
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive">Failed to load interns: {error.message}</p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
@@ -111,6 +101,7 @@ function EditInterns() {
             }
             placeholder="Alice"
             className="w-36"
+            disabled={submitting}
           />
         </div>
 
@@ -126,6 +117,7 @@ function EditInterns() {
             }
             placeholder="Garcia"
             className="w-36"
+            disabled={submitting}
           />
         </div>
 
@@ -141,6 +133,7 @@ function EditInterns() {
             }
             placeholder="Operations"
             className="w-40"
+            disabled={submitting}
           />
         </div>
 
@@ -151,6 +144,7 @@ function EditInterns() {
             onValueChange={(value) =>
               setForm((current) => ({ ...current, status: value as InternRecord['status'] }))
             }
+            disabled={submitting}
           >
             <SelectTrigger size="sm" className="w-28">
               <SelectValue />
@@ -162,13 +156,13 @@ function EditInterns() {
           </Select>
         </div>
 
-        <Button type="submit" size="sm">
+        <Button type="submit" size="sm" disabled={submitting}>
           <UserPlus className="size-4" />
           {isEditing ? 'Update' : 'Add Intern'}
         </Button>
 
         {isEditing && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)} disabled={submitting}>
             Cancel
           </Button>
         )}
@@ -216,9 +210,7 @@ function EditInterns() {
                         onClick={() => handleEdit(intern)}
                       >
                         <Pencil className="size-3.5" />
-                        <span className="sr-only">
-                          Edit {intern.firstName} {intern.lastName}
-                        </span>
+                        <span className="sr-only">Edit {intern.firstName} {intern.lastName}</span>
                       </Button>
                       <Button
                         type="button"
@@ -228,9 +220,7 @@ function EditInterns() {
                         onClick={() => handleDelete(intern.id)}
                       >
                         <Trash2 className="size-3.5" />
-                        <span className="sr-only">
-                          Delete {intern.firstName} {intern.lastName}
-                        </span>
+                        <span className="sr-only">Delete {intern.firstName} {intern.lastName}</span>
                       </Button>
                     </div>
                   </TableCell>

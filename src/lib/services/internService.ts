@@ -1,0 +1,84 @@
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/database.types';
+
+type InternRow = Database['public']['Tables']['interns']['Row'];
+type InternInsert = Database['public']['Tables']['interns']['Insert'];
+type InternUpdate = Database['public']['Tables']['interns']['Update'];
+
+export type Intern = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  department: string;
+  status: 'Active' | 'Inactive';
+};
+
+export async function getInterns(): Promise<Intern[]> {
+  const { data, error } = await supabase
+    .from('interns')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return data.map((row: InternRow) => ({
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    department: row.department,
+    status: row.status as 'Active' | 'Inactive',
+  }));
+}
+
+export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> {
+  const insertData: InternInsert = {
+    id: `I-${Date.now().toString(36).toUpperCase()}`,
+    first_name: intern.firstName,
+    last_name: intern.lastName,
+    department: intern.department,
+    status: intern.status,
+  };
+
+  const { data, error } = await supabase.from('interns').insert(insertData).select().single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    department: data.department,
+    status: data.status as 'Active' | 'Inactive',
+  };
+}
+
+export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Promise<Intern> {
+  const updateData: InternUpdate = {
+    first_name: intern.firstName,
+    last_name: intern.lastName,
+    department: intern.department,
+    status: intern.status,
+  };
+
+  const { data, error } = await supabase
+    .from('interns')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    department: data.department,
+    status: data.status as 'Active' | 'Inactive',
+  };
+}
+
+export async function deleteIntern(id: string): Promise<void> {
+  const { error } = await supabase.from('interns').delete().eq('id', id);
+  if (error) throw error;
+}

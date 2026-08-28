@@ -6,7 +6,7 @@ const DEV_ADMIN_EMAIL = 'admin@njsb.com';
 const DEV_ADMIN_PASSWORD = 'admin123';
 
 interface LoginPageProps {
-  onLogin?: () => void;
+  onLogin?: (email: string, password: string) => Promise<void>;
   heading?: string;
   logo?: {
     url: string;
@@ -35,17 +35,26 @@ function LoginPage({
   const [email, setEmail] = useState(DEV_ADMIN_EMAIL);
   const [password, setPassword] = useState(DEV_ADMIN_PASSWORD);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (email.trim() === DEV_ADMIN_EMAIL && password === DEV_ADMIN_PASSWORD) {
-      setError('');
-      onLogin?.();
+    if (!email.trim() || !password) {
+      setError('Enter your email and password to continue.');
       return;
     }
 
-    setError('Invalid email or password. Use the admin demo credentials.');
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await onLogin?.(email.trim(), password);
+    } catch (e) {
+      setError((e as Error).message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -68,6 +77,7 @@ function LoginPage({
                 aria-label="Email"
                 className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                 required
+                autoComplete="email"
               />
               <input
                 type="password"
@@ -77,16 +87,17 @@ function LoginPage({
                 aria-label="Password"
                 className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                 required
+                autoComplete="current-password"
               />
 
               {error && <p className="text-xs text-red-600">{error}</p>}
 
               <div className="rounded-md bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">
-                Demo admin: admin@njsb.com / admin123
+                Test admin: admin@njsb.com / admin123
               </div>
 
-              <Button type="submit" className="mt-1 h-10 w-full rounded-md bg-slate-900 text-white hover:bg-slate-800">
-                {buttonText}
+              <Button type="submit" disabled={isSubmitting} className="mt-1 h-10 w-full rounded-md bg-slate-900 text-white hover:bg-slate-800">
+                {isSubmitting ? 'Signing in...' : buttonText}
               </Button>
             </div>
           </form>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { FilePlus2, Pencil, Trash2 } from 'lucide-react';
+import { FilePlus2, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,18 +20,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export interface ReportRecord {
-  id: string;
-  title: string;
-  type: 'Attendance' | 'Payroll' | 'Summary';
-  generatedAt: string;
-  owner: string;
-}
+import { useReports } from '@/lib/hooks/useSupabaseData';
+import type { ReportRecord } from '@/lib/services/reportService';
 
-const initialReports: ReportRecord[] = [
-  { id: 'R-001', title: 'August Attendance', type: 'Attendance', generatedAt: '2026-08-01', owner: 'System' },
-  { id: 'R-002', title: 'Payroll Summary', type: 'Payroll', generatedAt: '2026-08-06', owner: 'Finance' },
-];
+export type { ReportRecord };
 
 function emptyForm(): ReportRecord {
   return {
@@ -44,12 +36,13 @@ function emptyForm(): ReportRecord {
 }
 
 function GenerateReport() {
-  const [reports, setReports] = useState<ReportRecord[]>(initialReports);
+  const { reports, loading, error, create, update, remove } = useReports();
   const [form, setForm] = useState<ReportRecord>(emptyForm());
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(form.id);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     const title = form.title.trim();
@@ -57,35 +50,39 @@ function GenerateReport() {
 
     if (!title || !owner) return;
 
-    const nextReport: ReportRecord = {
-      ...form,
-      id: form.id || `R-${String(reports.length + 1).padStart(3, '0')}`,
-      title,
-      owner,
-    };
+    setSubmitting(true);
 
-    setReports((current) => {
-      if (form.id) {
-        return current.map((item) => (item.id === form.id ? nextReport : item));
+    try {
+      if (isEditing) {
+        await update(form.id, { title, type: form.type, generatedAt: form.generatedAt, owner });
+      } else {
+        await create({ title, type: form.type, generatedAt: form.generatedAt, owner });
       }
-
-      return [nextReport, ...current];
-    });
-
-    setForm(emptyForm());
+      setForm(emptyForm());
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (report: ReportRecord) => {
     setForm(report);
   };
 
-  const handleDelete = (id: string) => {
-    setReports((current) => current.filter((item) => item.id !== id));
-
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this report? This cannot be undone.')) return;
+    await remove(id);
     if (form.id === id) {
       setForm(emptyForm());
     }
   };
+
+  if (loading) {
+    return (
+      <section className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -93,6 +90,10 @@ function GenerateReport() {
         <h3 className="text-base font-semibold">Reports</h3>
         <Badge variant="secondary">{reports.length} files</Badge>
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive">Failed to load reports: {error.message}</p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
@@ -107,6 +108,7 @@ function GenerateReport() {
             }
             placeholder="August Attendance"
             className="w-48"
+            disabled={submitting}
           />
         </div>
 
@@ -117,13 +119,13 @@ function GenerateReport() {
             onValueChange={(value) =>
               setForm((current) => ({ ...current, type: value as ReportRecord['type'] }))
             }
+            disabled={submitting}
           >
             <SelectTrigger size="sm" className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Attendance">Attendance</SelectItem>
-              <SelectItem value="Payroll">Payroll</SelectItem>
               <SelectItem value="Summary">Summary</SelectItem>
             </SelectContent>
           </Select>
@@ -141,6 +143,7 @@ function GenerateReport() {
               setForm((current) => ({ ...current, generatedAt: event.target.value }))
             }
             className="w-40"
+            disabled={submitting}
           />
         </div>
 
@@ -156,16 +159,17 @@ function GenerateReport() {
             }
             placeholder="Finance"
             className="w-36"
+            disabled={submitting}
           />
         </div>
 
-        <Button type="submit" size="sm">
+        <Button type="submit" size="sm" disabled={submitting}>
           <FilePlus2 className="size-4" />
           {isEditing ? 'Update' : 'Create Report'}
         </Button>
 
         {isEditing && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm())}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm())} disabled={submitting}>
             Cancel
           </Button>
         )}

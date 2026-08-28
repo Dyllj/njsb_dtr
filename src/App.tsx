@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import Header from './components/header/header';
@@ -11,24 +10,22 @@ import Report from './pages/report/report';
 import Settings from './pages/settings/settings';
 import LoginPage from './pages/loginPage/loginPage';
 
-const AUTH_KEY = 'njsb_dtr_admin_logged_in';
+import { useAuth } from '@/context/AuthContext';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem(AUTH_KEY) === 'true';
-  });
+  const { session, loading, login, logout } = useAuth();
 
-  useEffect(() => {
-    localStorage.setItem(AUTH_KEY, String(isAuthenticated));
-  }, [isAuthenticated]);
+  if (loading) {
+    return null;
+  }
 
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  if (!session) {
+    return <LoginPage onLogin={login} />;
   }
 
   return (
     <>
-      <Header />
+      <Header onLogout={logout} />
       <Sidebar />
       <main className="ml-52 pt-16 p-4 flex flex-col gap-4">
         <Routes>
@@ -44,4 +41,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

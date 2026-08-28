@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-function Header() {
+function Header({ onLogout }: { onLogout?: () => void }) {
   return (
     <header className="fixed left-52 top-0 right-0 z-30 h-16 bg-white p-4 shadow-sm">
       <div className="flex h-full items-center justify-between gap-7">
@@ -50,7 +50,12 @@ function Header() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(event) => {
+                event.preventDefault();
+                onLogout?.();
+              }}>
               <LogOut className="size-4" />
               Logout
             </DropdownMenuItem>

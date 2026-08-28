@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,28 +20,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export interface AdminRecord {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: 'Active' | 'Inactive';
-}
-
-const initialAdmins: AdminRecord[] = [
-  { id: 'A-001', name: 'Rosa Dela Cruz', email: 'rosa@njsb.com', role: 'Super Admin', status: 'Active' },
-  { id: 'A-002', name: 'Mark Santos', email: 'mark@njsb.com', role: 'Manager', status: 'Active' },
-];
+import { useAdmins } from '@/lib/hooks/useSupabaseData';
+import type { AdminRecord } from '@/lib/services/adminService';
 
 const emptyForm: AdminRecord = { id: '', name: '', email: '', role: '', status: 'Active' };
 
 function EditAdmins() {
-  const [admins, setAdmins] = useState<AdminRecord[]>(initialAdmins);
+  const { admins, loading, error, create, update, remove } = useAdmins();
   const [form, setForm] = useState<AdminRecord>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(form.id);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     const name = form.name.trim();
@@ -50,36 +41,39 @@ function EditAdmins() {
 
     if (!name || !email || !role) return;
 
-    const nextAdmin: AdminRecord = {
-      ...form,
-      id: form.id || `A-${String(admins.length + 1).padStart(3, '0')}`,
-      name,
-      email,
-      role,
-    };
+    setSubmitting(true);
 
-    setAdmins((current) => {
-      if (form.id) {
-        return current.map((item) => (item.id === form.id ? nextAdmin : item));
+    try {
+      if (isEditing) {
+        await update(form.id, { name, email, role, status: form.status });
+      } else {
+        await create({ name, email, role, status: form.status });
       }
-
-      return [nextAdmin, ...current];
-    });
-
-    setForm(emptyForm);
+      setForm(emptyForm);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (admin: AdminRecord) => {
     setForm(admin);
   };
 
-  const handleDelete = (id: string) => {
-    setAdmins((current) => current.filter((item) => item.id !== id));
-
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this admin? This cannot be undone.')) return;
+    await remove(id);
     if (form.id === id) {
       setForm(emptyForm);
     }
   };
+
+  if (loading) {
+    return (
+      <section className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -87,6 +81,10 @@ function EditAdmins() {
         <h3 className="text-base font-semibold">Admins</h3>
         <Badge variant="secondary">{admins.length} users</Badge>
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive">Failed to load admins: {error.message}</p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
@@ -101,6 +99,7 @@ function EditAdmins() {
             }
             placeholder="Juan Dela Cruz"
             className="w-44"
+            disabled={submitting}
           />
         </div>
 
@@ -117,6 +116,7 @@ function EditAdmins() {
             }
             placeholder="name@njsb.com"
             className="w-52"
+            disabled={submitting}
           />
         </div>
 
@@ -132,6 +132,7 @@ function EditAdmins() {
             }
             placeholder="Manager"
             className="w-36"
+            disabled={submitting}
           />
         </div>
 
@@ -142,6 +143,7 @@ function EditAdmins() {
             onValueChange={(value) =>
               setForm((current) => ({ ...current, status: value as AdminRecord['status'] }))
             }
+            disabled={submitting}
           >
             <SelectTrigger size="sm" className="w-28">
               <SelectValue />
@@ -153,13 +155,13 @@ function EditAdmins() {
           </Select>
         </div>
 
-        <Button type="submit" size="sm">
+        <Button type="submit" size="sm" disabled={submitting}>
           <UserPlus className="size-4" />
           {isEditing ? 'Update' : 'Add Admin'}
         </Button>
 
         {isEditing && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)} disabled={submitting}>
             Cancel
           </Button>
         )}
@@ -188,7 +190,7 @@ function EditAdmins() {
                 <TableRow key={admin.id}>
                   <TableCell>
                     <p className="font-medium text-foreground">{admin.name}</p>
-                    <p className="text-xs text-muted-foreground">{admin.id}</p>
+                    <p className="text-xs text-muted-foreground">{admin.id.slice(0, 8)}</p>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{admin.email}</TableCell>
                   <TableCell className="text-muted-foreground">{admin.role}</TableCell>
