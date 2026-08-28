@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,32 +12,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface Intern {
-  id: string;
-  firstName: string;
-  mi?: string;
-  lastName: string;
-  totalHours: number;
-  accumulatedHours: number;
-}
+import { useInterns } from '@/lib/hooks/useSupabaseData';
 
 function formatHours(h: number) {
   return `${h.toFixed(2)} hrs`;
 }
 
 function Interns() {
+  const { interns, loading, error, create } = useInterns();
   const [query, setQuery] = useState('');
-  const [interns, setInterns] = useState<Intern[]>([
-    { id: 'I-001', firstName: 'Alice', mi: 'B.', lastName: 'Garcia', totalHours: 480, accumulatedHours: 120 },
-    { id: 'I-002', firstName: 'Bob', mi: 'C.', lastName: 'Lee', totalHours: 300, accumulatedHours: 200 },
-    { id: 'I-003', firstName: 'Cara', mi: 'D.', lastName: 'Nguyen', totalHours: 400, accumulatedHours: 50 },
-  ]);
+  const [submitting, setSubmitting] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return interns;
     return interns.filter((it) =>
-      [it.id, it.firstName, it.mi || '', it.lastName]
+      [it.id, it.firstName, it.lastName, it.department]
         .join(' ')
         .toLowerCase()
         .includes(q)
@@ -45,27 +35,35 @@ function Interns() {
   }, [interns, query]);
 
   function handleAdd() {
-    // Simple prompt-based add for boilerplate/demo purposes.
-    const firstName = window.prompt('First name:')?.trim();
+    const firstName = window.prompt('First name:')?.trim() || '';
     if (!firstName) return;
-    const mi = window.prompt('Middle initial (optional):')?.trim() || undefined;
     const lastName = window.prompt('Last name:')?.trim() || '';
+    const department = window.prompt('Department:', 'Operations')?.trim() || 'Operations';
     const totalHoursStr = window.prompt('Total hours (numeric):', '400') || '0';
     const accumulatedStr = window.prompt('Accumulated hours (numeric):', '0') || '0';
 
     const totalHours = Number(totalHoursStr) || 0;
     const accumulatedHours = Number(accumulatedStr) || 0;
 
-    const newIntern: Intern = {
-      id: `I-${String(interns.length + 1).padStart(3, '0')}`,
-      firstName,
-      mi,
-      lastName,
-      totalHours,
-      accumulatedHours,
-    };
+    const status = window.prompt('Status (Active/Inactive):', 'Active')?.trim() || 'Active';
 
-    setInterns((prev) => [newIntern, ...prev]);
+    setSubmitting(true);
+    create({ firstName, lastName, department, status: status as 'Active' | 'Inactive', totalHours, accumulatedHours })
+      .catch((e) => {
+        console.error(e);
+        alert('Failed to add intern. See console for details.');
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -83,16 +81,20 @@ function Interns() {
               type="search"
               value={query}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              placeholder="Search by ID, first name, MI, or last name"
+              placeholder="Search by ID, name, or department"
               className="w-72 pl-9 rounded-md border py-2 px-2 focus:outline-none focus:ring-2"
             />
           </div>
-          <Button onClick={handleAdd}>
+          <Button onClick={handleAdd} disabled={submitting}>
             <UserPlus className="size-4" />
             Add Intern
           </Button>
         </div>
       </div>
+
+      {error && (
+        <p className="text-sm text-destructive ml-5">Failed to load interns: {error.message}</p>
+      )}
 
       <Card>
         <CardHeader>
@@ -104,8 +106,8 @@ function Interns() {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>First name</TableHead>
-                <TableHead>MI</TableHead>
                 <TableHead>Last name</TableHead>
+                <TableHead>Department</TableHead>
                 <TableHead className="text-right">Total hours</TableHead>
                 <TableHead className="text-right">Accumulated hours</TableHead>
                 <TableHead className="text-right">Remaining hours</TableHead>
@@ -125,8 +127,8 @@ function Interns() {
                     <TableRow key={it.id}>
                       <TableCell>{it.id}</TableCell>
                       <TableCell>{it.firstName}</TableCell>
-                      <TableCell>{it.mi || ''}</TableCell>
                       <TableCell>{it.lastName}</TableCell>
+                      <TableCell>{it.department}</TableCell>
                       <TableCell className="text-right">{formatHours(it.totalHours)}</TableCell>
                       <TableCell className="text-right">{formatHours(it.accumulatedHours)}</TableCell>
                       <TableCell className="text-right">{formatHours(remaining)}</TableCell>

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Smile, Clock, AlarmClock, Frown, type LucideIcon } from 'lucide-react';
 
-type StatItem = {
+export type StatItem = {
   label: string;
   value: number | string;
   subtext?: string;

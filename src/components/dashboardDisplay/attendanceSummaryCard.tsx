@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,11 +24,39 @@ const defaultSlices: SummarySlice[] = [
 
 type AttendanceSummaryCardProps = {
   slices?: SummarySlice[];
+  loading?: boolean;
+  error?: Error | null;
 };
 
-function AttendanceSummaryCard({ slices = defaultSlices }: AttendanceSummaryCardProps) {
+function AttendanceSummaryCard({ slices = defaultSlices, loading, error }: AttendanceSummaryCardProps) {
   const [period, setPeriod] = useState('today');
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
+
+  if (loading) {
+    return (
+      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <CardHeader>
+          <CardTitle>Attendance Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="animate-spin size-6 text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+        <CardHeader>
+          <CardTitle>Attendance Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-destructive">Failed to load: {error.message}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">

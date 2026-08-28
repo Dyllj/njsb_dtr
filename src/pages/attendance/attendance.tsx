@@ -1,23 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, CalendarCheck2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarCheck2, Loader2 } from 'lucide-react';
 
-type DayAttendance = {
-  present: number;
-  absent: number;
-  total: number;
-};
+import { useMonthlyAttendance } from '@/lib/hooks/useSupabaseData';
+import type { AttendanceSummary } from '@/lib/services/attendanceService';
 
-const TOTAL_INTERNS = 120;
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addDays(date: Date, days: number) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
 }
 
 function sameDay(a: Date, b: Date) {
@@ -60,34 +50,13 @@ function getCalendarMatrix(year: number, month: number) {
     const lastWeek = matrix[matrix.length - 1];
     const base = lastWeek ? lastWeek[6] : new Date(year, month, daysInMonth);
     const nextWeek: Date[] = [];
-    for (let i = 1; i <= 7; i++) nextWeek.push(addDays(base, i));
+    for (let i = 1; i <= 7; i++) {
+      nextWeek.push(new Date(base.getTime() + i * 24 * 60 * 60 * 1000));
+    }
     matrix.push(nextWeek);
   }
 
   return matrix;
-}
-
-// Deterministic pseudo-random attendance so numbers stay stable while browsing months.
-// Swap this out for a real lookup once the backend is wired up.
-function hashDate(date: Date) {
-  const str = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function getAttendance(date: Date, today: Date): DayAttendance | null {
-  const dayOfWeek = date.getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  const isFuture = date > today;
-  if (isWeekend || isFuture) return null;
-
-  const seed = hashDate(date);
-  const absent = 3 + (seed % 13); // 3-15 absentees out of TOTAL_INTERNS
-  return { present: TOTAL_INTERNS - absent, absent, total: TOTAL_INTERNS };
 }
 
 export default function Attendance() {
@@ -96,26 +65,56 @@ export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
+  const { data: attendanceData, loading, error } = useMonthlyAttendance(
+    viewDate.getFullYear(),
+    viewDate.getMonth()
+  );
+
   const matrix = useMemo(
     () => getCalendarMatrix(viewDate.getFullYear(), viewDate.getMonth()),
     [viewDate]
   );
 
   function prevMonth() {
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
   }
   function nextMonth() {
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
   }
   function goToday() {
     setViewDate(startOfMonth(today));
     setSelectedDate(today);
   }
 
+  function getAttendance(date: Date): AttendanceSummary | null {
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isFuture = date > today;
+    if (isWeekend || isFuture) return null;
+
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return attendanceData[dateKey] ?? null;
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">Attendance</h2>
+            <p className="text-sm text-slate-500">Monthly overview of intern check-ins</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="animate-spin size-8 text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6">
       <div className="flex w-full flex-col">
-        {/* Page header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">Attendance</h2>
@@ -123,19 +122,23 @@ export default function Attendance() {
           </div>
           <button
             onClick={goToday}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-sky-300 hover:text-sky-600"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-800 hover:text-red-800"
           >
             Today
           </button>
         </div>
 
-        {/* Calendar card */}
+        {error && (
+          <p className="mb-4 text-sm text-destructive">
+            Failed to load attendance data: {error.message}
+          </p>
+        )}
+
         <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {/* Calendar header */}
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
               <CalendarCheck2 className="h-5 w-5 text-sky-600" />
-              {viewDate.toLocaleString(undefined, { month: 'long' })} {viewDate.getFullYear()}
+              {viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}
             </div>
             <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-1">
               <button
@@ -155,7 +158,6 @@ export default function Attendance() {
             </div>
           </div>
 
-          {/* Weekday labels */}
           <div className="grid grid-cols-7 border-b border-slate-100 px-3 pt-3">
             {WEEKDAY_LABELS.map((label) => (
               <div
@@ -167,7 +169,6 @@ export default function Attendance() {
             ))}
           </div>
 
-          {/* Calendar grid */}
           <div className="grid auto-rows-21 grid-cols-7 gap-1.5 p-3">
             {matrix.map((week, wi) =>
               week.map((day, di) => {
@@ -175,7 +176,7 @@ export default function Attendance() {
                 const isToday = sameDay(day, today);
                 const isSelected = selectedDate !== null && sameDay(day, selectedDate);
                 const isHovered = hoveredDate !== null && sameDay(day, hoveredDate);
-                const attendance = getAttendance(day, today);
+                const attendance = getAttendance(day);
                 const isWeekendCol = di === 0 || di === 6;
                 const showAbove = wi >= matrix.length - 2;
 
@@ -209,7 +210,6 @@ export default function Attendance() {
                       )}
                     </button>
 
-                    {/* Hover tooltip */}
                     {isHovered && attendance && (
                       <div
                         className={[
@@ -245,7 +245,7 @@ export default function Attendance() {
                           di === 0 ? 'left-0' : di === 6 ? 'right-0' : 'left-1/2 -translate-x-1/2',
                         ].join(' ')}
                       >
-                        {day > today ? 'No data yet' : 'No schedule'}
+                        {day > today ? 'No data yet' : 'No records'}
                       </div>
                     )}
                   </div>
@@ -254,7 +254,6 @@ export default function Attendance() {
             )}
           </div>
 
-          {/* Legend */}
           <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> Low absences

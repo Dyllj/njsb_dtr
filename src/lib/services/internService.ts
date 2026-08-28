@@ -11,6 +11,8 @@ export type Intern = {
   lastName: string;
   department: string;
   status: 'Active' | 'Inactive';
+  totalHours: number;
+  accumulatedHours: number;
 };
 
 export async function getInterns(): Promise<Intern[]> {
@@ -27,7 +29,19 @@ export async function getInterns(): Promise<Intern[]> {
     lastName: row.last_name,
     department: row.department,
     status: row.status as 'Active' | 'Inactive',
+    totalHours: Number(row.total_hours),
+    accumulatedHours: Number(row.accumulated_hours),
   }));
+}
+
+export async function getInternCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('interns')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Active');
+
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> {
@@ -37,6 +51,8 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     last_name: intern.lastName,
     department: intern.department,
     status: intern.status,
+    total_hours: intern.totalHours,
+    accumulated_hours: intern.accumulatedHours,
   };
 
   const { data, error } = await supabase.from('interns').insert(insertData).select().single();
@@ -49,6 +65,8 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     lastName: data.last_name,
     department: data.department,
     status: data.status as 'Active' | 'Inactive',
+    totalHours: Number(data.total_hours),
+    accumulatedHours: Number(data.accumulated_hours),
   };
 }
 
@@ -58,6 +76,8 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
     last_name: intern.lastName,
     department: intern.department,
     status: intern.status,
+    total_hours: intern.totalHours,
+    accumulated_hours: intern.accumulatedHours,
   };
 
   const { data, error } = await supabase
@@ -75,6 +95,8 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
     lastName: data.last_name,
     department: data.department,
     status: data.status as 'Active' | 'Inactive',
+    totalHours: Number(data.total_hours),
+    accumulatedHours: Number(data.accumulated_hours),
   };
 }
 

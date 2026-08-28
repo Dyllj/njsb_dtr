@@ -25,7 +25,11 @@ import type { Intern } from '@/lib/services/internService';
 
 export type InternRecord = Intern;
 
-const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active' };
+function formatHours(h: number) {
+  return `${h.toFixed(2)} hrs`;
+}
+
+const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active', totalHours: 400, accumulatedHours: 0 };
 
 function EditInterns() {
   const { interns, loading, error, create, update, remove } = useInterns();
@@ -47,9 +51,9 @@ function EditInterns() {
 
     try {
       if (isEditing) {
-        await update(form.id, { firstName, lastName, department, status: form.status });
+        await update(form.id, { firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours });
       } else {
-        await create({ firstName, lastName, department, status: form.status });
+        await create({ firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours });
       }
       setForm(emptyForm);
     } finally {
@@ -156,6 +160,40 @@ function EditInterns() {
           </Select>
         </div>
 
+        <div className="flex flex-col gap-1">
+          <label htmlFor="intern-total" className="text-xs font-medium text-muted-foreground">
+            Total hours
+          </label>
+          <Input
+            id="intern-total"
+            type="number"
+            value={form.totalHours}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setForm((current) => ({ ...current, totalHours: Number(event.target.value) || 0 }))
+            }
+            placeholder="400"
+            className="w-28"
+            disabled={submitting}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="intern-accumulated" className="text-xs font-medium text-muted-foreground">
+            Accumulated
+          </label>
+          <Input
+            id="intern-accumulated"
+            type="number"
+            value={form.accumulatedHours}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setForm((current) => ({ ...current, accumulatedHours: Number(event.target.value) || 0 }))
+            }
+            placeholder="0"
+            className="w-28"
+            disabled={submitting}
+          />
+        </div>
+
         <Button type="submit" size="sm" disabled={submitting}>
           <UserPlus className="size-4" />
           {isEditing ? 'Update' : 'Add Intern'}
@@ -188,11 +226,13 @@ function EditInterns() {
             ) : (
               interns.map((intern) => (
                 <TableRow key={intern.id}>
-                  <TableCell>
+                   <TableCell>
                     <p className="font-medium text-foreground">
                       {intern.firstName} {intern.lastName}
                     </p>
-                    <p className="text-xs text-muted-foreground">{intern.id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {intern.id} · {formatHours(Math.max(0, intern.totalHours - intern.accumulatedHours))} left
+                    </p>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{intern.department}</TableCell>
                   <TableCell>

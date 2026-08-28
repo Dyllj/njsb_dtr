@@ -9,7 +9,7 @@ import type { ReportRecord } from '@/lib/services/reportService';
 import * as reportService from '@/lib/services/reportService';
 import type { Holiday } from '@/lib/services/holidayService';
 import * as holidayService from '@/lib/services/holidayService';
-import type { AttendanceSummary } from '@/lib/services/attendanceService';
+import type { AttendanceSummary, DashboardAttendanceRow, DashboardActivityItem, WeeklyAttendanceRow } from '@/lib/services/attendanceService';
 import * as attendanceService from '@/lib/services/attendanceService';
 
 export function useInterns() {
@@ -272,4 +272,166 @@ export function useAttendance(date?: string) {
   }, [date]);
 
   return { data, loading, error };
+}
+
+export function useMonthlyAttendance(year: number, month: number) {
+  const [data, setData] = useState<Record<string, AttendanceSummary>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await attendanceService.getMonthlyAttendance(year, month);
+      setData(result);
+    } catch (e) {
+      setError(e as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [year, month]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    attendanceService
+      .getMonthlyAttendance(year, month)
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e as Error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [year, month]);
+
+  return { data, loading, error, refetch };
+}
+
+export type DashboardStats = {
+  totalInterns: number;
+  presentToday: number;
+  workingNow: number;
+  lateToday: number;
+  absentToday: number;
+  percentage: string;
+};
+
+export type DashboardData = {
+  stats: DashboardStats;
+  overviewRows: DashboardAttendanceRow[];
+  summarySlices: { label: string; value: number; color: string }[];
+  activityItems: DashboardActivityItem[];
+  weeklyRows: WeeklyAttendanceRow[];
+};
+
+export function useDashboardData() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const [internCount, stats, overviewRows, summary, activityItems, weeklyRows] = await Promise.all([
+        internService.getInternCount(),
+        attendanceService.getInternStats(),
+        attendanceService.getTodayAttendanceRows(),
+        attendanceService.getAttendanceOverview(today),
+        attendanceService.getRecentActivity(),
+        attendanceService.getWeeklyAttendanceGrid(),
+      ]);
+
+      const percentage =
+        stats.presentToday > 0
+          ? `${((stats.presentToday / (stats.presentToday + stats.absentToday)) * 100).toFixed(1)}%`
+          : '0.0%';
+
+      setData({
+        stats: {
+          totalInterns: internCount,
+          presentToday: stats.presentToday,
+          workingNow: stats.workingNow,
+          lateToday: stats.late,
+          absentToday: stats.absent,
+          percentage,
+        },
+        overviewRows,
+        summarySlices: [
+          { label: 'Present', value: summary.present, color: '#0ea5e9' },
+          { label: 'Absent', value: summary.absent, color: '#f43f5e' },
+          { label: 'Late', value: summary.late, color: '#f59e0b' },
+        ],
+        activityItems,
+        weeklyRows,
+      });
+    } catch (e) {
+      setError(e as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    Promise.all([
+      internService.getInternCount(),
+      attendanceService.getInternStats(),
+      attendanceService.getTodayAttendanceRows(),
+      attendanceService.getAttendanceOverview(today),
+      attendanceService.getRecentActivity(),
+      attendanceService.getWeeklyAttendanceGrid(),
+    ])
+      .then(([internCount, stats, overviewRows, summary, activityItems, weeklyRows]) => {
+        if (!cancelled) {
+          const percentage =
+            stats.presentToday > 0
+              ? `${((stats.presentToday / (stats.presentToday + stats.absentToday)) * 100).toFixed(1)}%`
+              : '0.0%';
+
+          setData({
+            stats: {
+              totalInterns: internCount,
+              presentToday: stats.presentToday,
+              workingNow: stats.workingNow,
+              lateToday: stats.late,
+              absentToday: stats.absent,
+              percentage,
+            },
+            overviewRows,
+            summarySlices: [
+              { label: 'Present', value: summary.present, color: '#0ea5e9' },
+              { label: 'Absent', value: summary.absent, color: '#f43f5e' },
+              { label: 'Late', value: summary.late, color: '#f59e0b' },
+            ],
+            activityItems,
+            weeklyRows,
+          });
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e as Error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { data, loading, error, refetch };
 }
