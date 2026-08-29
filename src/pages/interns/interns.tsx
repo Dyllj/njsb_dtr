@@ -1,8 +1,25 @@
 import { useMemo, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { Search, UserPlus, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -13,15 +30,24 @@ import {
 } from '@/components/ui/table';
 
 import { useInterns } from '@/lib/hooks/useSupabaseData';
+import type { Intern } from '@/lib/services/internService';
 
-function formatHours(h: number) {
-  return `${h.toFixed(2)} hrs`;
-}
+const emptyForm: Omit<Intern, 'id'> = {
+  firstName: '',
+  lastName: '',
+  department: '',
+  status: 'Active',
+  totalHours: 400,
+  accumulatedHours: 0,
+};
 
 function Interns() {
   const { interns, loading, error, create } = useInterns();
   const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [form, setForm] = useState<Omit<Intern, 'id'>>(emptyForm);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,29 +60,53 @@ function Interns() {
     );
   }, [interns, query]);
 
-  function handleAdd() {
-    const firstName = window.prompt('First name:')?.trim() || '';
-    if (!firstName) return;
-    const lastName = window.prompt('Last name:')?.trim() || '';
-    const department = window.prompt('Department:', 'Operations')?.trim() || 'Operations';
-    const totalHoursStr = window.prompt('Total hours (numeric):', '400') || '0';
-    const accumulatedStr = window.prompt('Accumulated hours (numeric):', '0') || '0';
-
-    const totalHours = Number(totalHoursStr) || 0;
-    const accumulatedHours = Number(accumulatedStr) || 0;
-
-    const status = window.prompt('Status (Active/Inactive):', 'Active')?.trim() || 'Active';
-
-    setSubmitting(true);
-    create({ firstName, lastName, department, status: status as 'Active' | 'Inactive', totalHours, accumulatedHours })
-      .catch((e) => {
-        console.error(e);
-        alert('Failed to add intern. See console for details.');
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
+  function formatHours(h: number) {
+    return `${h.toFixed(2)} hrs`;
   }
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setSubmitError(null);
+  };
+
+  const openDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    resetForm();
+    setIsDialogOpen(false);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+
+    const firstName = form.firstName.trim();
+    const lastName = form.lastName.trim();
+    const department = form.department.trim();
+
+    if (!firstName || !lastName || !department) return;
+
+    setSubmitError(null);
+    setSubmitting(true);
+
+    try {
+      await create({
+        firstName,
+        lastName,
+        department,
+        status: form.status,
+        totalHours: form.totalHours,
+        accumulatedHours: form.accumulatedHours,
+      });
+      closeDialog();
+    } catch (e) {
+      setSubmitError((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -85,10 +135,130 @@ function Interns() {
               className="w-72 pl-9 rounded-md border py-2 px-2 focus:outline-none focus:ring-2"
             />
           </div>
-          <Button onClick={handleAdd} disabled={submitting}>
-            <UserPlus className="size-4" />
-            Add Intern
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openDialog} disabled={submitting}>
+                <UserPlus className="size-4" />
+                Add Intern
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Intern</DialogTitle>
+                <DialogDescription>
+                  Enter the intern details below and click Save Changes.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-first" className="text-xs font-medium text-muted-foreground">
+                      First name
+                    </label>
+                    <Input
+                      id="add-intern-first"
+                      value={form.firstName}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, firstName: e.target.value }))
+                      }
+                      placeholder="Alice"
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-last" className="text-xs font-medium text-muted-foreground">
+                      Last name
+                    </label>
+                    <Input
+                      id="add-intern-last"
+                      value={form.lastName}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, lastName: e.target.value }))
+                      }
+                      placeholder="Garcia"
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="add-intern-dept" className="text-xs font-medium text-muted-foreground">
+                    Department
+                  </label>
+                  <Input
+                    id="add-intern-dept"
+                    value={form.department}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setForm((c) => ({ ...c, department: e.target.value }))
+                    }
+                    placeholder="Operations"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-total" className="text-xs font-medium text-muted-foreground">
+                      Total hours
+                    </label>
+                    <Input
+                      id="add-intern-total"
+                      type="number"
+                      value={form.totalHours}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, totalHours: Number(e.target.value) || 0 }))
+                      }
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-accumulated" className="text-xs font-medium text-muted-foreground">
+                      Accumulated
+                    </label>
+                    <Input
+                      id="add-intern-accumulated"
+                      type="number"
+                      value={form.accumulatedHours}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, accumulatedHours: Number(e.target.value) || 0 }))
+                      }
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <Select
+                    value={form.status}
+                    onValueChange={(v) => setForm((c) => ({ ...c, status: v as 'Active' | 'Inactive' }))}
+                    disabled={submitting}
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" size="sm" onClick={closeDialog} disabled={submitting}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={submitting}>
+                    {submitting && <Loader2 className="size-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

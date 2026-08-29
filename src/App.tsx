@@ -8,7 +8,7 @@ import Attendance from './pages/attendance/attendance';
 import Schedule from './pages/schedule/schedule';
 import Report from './pages/report/report';
 import Settings from './pages/settings/settings';
-import LoginPage from './pages/loginPage/loginPage';
+import AcceptInvite from '@/components/acceptInvite';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -20,7 +20,7 @@ function App() {
   }
 
   if (!session) {
-    return <LoginPage onLogin={login} />;
+    return <AcceptInvite onLogin={login} />;
   }
 
   return (

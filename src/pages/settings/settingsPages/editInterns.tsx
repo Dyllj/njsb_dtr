@@ -194,9 +194,9 @@ function EditInterns() {
           />
         </div>
 
-        <Button type="submit" size="sm" disabled={submitting}>
+          <Button type="submit" size="sm" disabled={submitting}>
           <UserPlus className="size-4" />
-          {isEditing ? 'Update' : 'Add Intern'}
+          Save Changes
         </Button>
 
         {isEditing && (

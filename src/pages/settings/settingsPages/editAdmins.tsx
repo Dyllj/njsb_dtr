@@ -27,8 +27,9 @@ const emptyForm: AdminRecord = { id: '', name: '', email: '', role: '', status: 
 
 function EditAdmins() {
   const { admins, loading, error, create, update, remove } = useAdmins();
-  const [form, setForm] = useState<AdminRecord>(emptyForm);
+   const [form, setForm] = useState<AdminRecord>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isEditing = Boolean(form.id);
 
@@ -41,19 +42,22 @@ function EditAdmins() {
 
     if (!name || !email || !role) return;
 
-    setSubmitting(true);
+     setSubmitError(null);
+     setSubmitting(true);
 
-    try {
-      if (isEditing) {
-        await update(form.id, { name, email, role, status: form.status });
-      } else {
-        await create({ name, email, role, status: form.status });
-      }
-      setForm(emptyForm);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+     try {
+       if (isEditing) {
+         await update(form.id, { name, email, role, status: form.status });
+       } else {
+         await create({ name, email, role, status: form.status });
+       }
+       setForm(emptyForm);
+     } catch (e) {
+       setSubmitError((e as Error).message);
+     } finally {
+       setSubmitting(false);
+     }
+   };
 
   const handleEdit = (admin: AdminRecord) => {
     setForm(admin);
@@ -165,6 +169,7 @@ function EditAdmins() {
             Cancel
           </Button>
         )}
+        {submitError && <p className="text-sm text-destructive">{submitError}</p>}
       </form>
 
       <div className="overflow-hidden rounded-lg border border-border">
