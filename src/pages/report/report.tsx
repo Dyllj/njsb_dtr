@@ -47,7 +47,7 @@ function Report() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="mt-5 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Report</h2>
         <button
           onClick={handleGenerateReport}
