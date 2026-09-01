@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.13",
+    "@supabase/supabase-js": "^2.112.4",
     "axios": "^1.20.0",
     "expo": "~57.0.16",
     "expo-camera": "~57.0.4",
