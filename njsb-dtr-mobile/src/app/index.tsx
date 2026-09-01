@@ -1,9 +1,10 @@
-import { router, type Href } from 'expo-router';
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ActivityIndicator,
   StyleSheet,
   TextInput,
   View,
@@ -14,29 +15,42 @@ import { LogIn } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-
-const DEV_INTERN_ID = 'INT-0001';
-const DEV_PASSWORD = 'intern123';
+import { useAuth } from '@/stores/authStore';
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const { isAuthenticated, hasHydrated, isLoading, login } = useAuth();
   const [internId, setInternId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  function handleLogin() {
-    if (!internId.trim() || !password) {
-      setError('Enter your intern ID and password to continue.');
-      return;
+  useEffect(() => {
+    if (hasHydrated && isAuthenticated) {
+      router.replace('/(tabs)/scan');
     }
+  }, [hasHydrated, isAuthenticated]);
 
-    if (internId !== DEV_INTERN_ID || password !== DEV_PASSWORD) {
-      setError('Invalid credentials. Use the test credentials shown below.');
+  if (!hasHydrated || (hasHydrated && isAuthenticated)) {
+    return (
+      <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </ThemedView>
+    );
+  }
+
+  async function handleLogin() {
+    if (!internId.trim()) {
+      setError('Enter your Intern ID to continue.');
       return;
     }
 
     setError('');
-    router.replace('/(tabs)/scan' as Href);
+    try {
+      await login(internId.trim());
+      router.replace('/(tabs)/scan');
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }
 
   return (
@@ -63,7 +77,7 @@ export default function HomeScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={setInternId}
-              placeholder="e.g. INT-0001"
+              placeholder="e.g. I-001"
               placeholderTextColor="#8d9299"
               style={[styles.input, { backgroundColor: theme.card, borderColor: theme.border, color: theme.text }]}
               value={internId}
@@ -83,23 +97,26 @@ export default function HomeScreen() {
 
             <ThemedView type="backgroundElement" style={styles.credentialsCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Test credentials
-              </ThemedText>
-              <ThemedText type="smallBold" style={styles.credentialsText}>
-                {DEV_INTERN_ID} / {DEV_PASSWORD}
+                Enter the Intern ID provided by your administrator.
               </ThemedText>
             </ThemedView>
 
             <Pressable
               onPress={handleLogin}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.button,
                 { backgroundColor: theme.primary },
                 pressed && styles.pressed,
+                isLoading && { opacity: 0.7 },
               ]}>
-              <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
-                Sign in
-              </ThemedText>
+              {isLoading ? (
+                <ActivityIndicator color={theme.primaryForeground} />
+              ) : (
+                <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
+                  Sign in
+                </ThemedText>
+              )}
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -161,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginTop: 4,
