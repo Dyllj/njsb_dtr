@@ -1,18 +1,154 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { QrCode } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { CheckCircle, QrCode, XCircle } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/stores/authStore';
+import { validateQRCode, type QrCodeRecord } from '@/services/qrCodeService';
+import {
+  getTodayAttendance,
+  recordCheckIn,
+  recordCheckOut,
+  type AttendanceRecord,
+} from '@/services/attendanceService';
+
+/**
+ * Extract the raw QR code value from scanned data.
+ * Handles both plain codes and URLs that embed the code in the path.
+ */
+function extractCode(data: string): string {
+  if (data.includes('://')) {
+    const pathPart = data.split('://')[1];
+    const segments = pathPart.split('/').filter(Boolean);
+    return segments[segments.length - 1] || data;
+  }
+  if (data.startsWith('/')) {
+    const segments = data.split('/').filter(Boolean);
+    return segments[segments.length - 1] || data;
+  }
+  return data;
+}
+
+/**
+ * Format a stored time string (either full ISO timestamp or time-only)
+ * into a display-friendly HH:MM AM/PM format.
+ */
+function formatTime(timeStr: string | null): string {
+  if (!timeStr) return '';
+
+  try {
+    const date = new Date(timeStr);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+  } catch {
+    // fall through to time-only parsing
+  }
+
+  const [hours, minutes] = timeStr.split(':');
+  const h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayHours = h % 12 || 12;
+  return `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
+type ScanResult =
+  | { status: 'idle' }
+  | { status: 'processing' }
+  | {
+      status: 'success';
+      action: 'check-in' | 'check-out';
+      time: string;
+      message: string;
+    }
+  | { status: 'error'; message: string };
 
 export default function ScanScreen() {
   const theme = useTheme();
+  const { intern, isAuthenticated, hasHydrated } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
-  const [message, setMessage] = useState('Align the QR code inside the frame');
+  const [scanResult, setScanResult] = useState<ScanResult>({ status: 'idle' });
+
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
+      router.replace('/');
+    }
+  }, [hasHydrated, isAuthenticated]);
+
+  if (!hasHydrated || !isAuthenticated || !intern) {
+    return <ThemedView style={styles.container} />;
+  }
+
+  const scanning = scanResult.status === 'processing';
+
+  async function handleBarcodeScanned({ data }: { data: string }) {
+    if (scanning || !intern) return;
+
+    setScanResult({ status: 'processing' });
+
+    try {
+      const code = extractCode(data);
+
+      const qr: QrCodeRecord | null = await validateQRCode(code);
+      if (!qr) {
+        setScanResult({
+          status: 'error',
+          message:
+            'This QR code is no longer valid. Please ask your administrator for the current QR code.',
+        });
+        return;
+      }
+
+      const today: AttendanceRecord | null = await getTodayAttendance(intern.id);
+
+      if (!today || !today.timeIn) {
+        const record: AttendanceRecord = await recordCheckIn(intern.id);
+        setScanResult({
+          status: 'success',
+          action: 'check-in',
+          time: formatTime(record.timeIn),
+          message: `Welcome, ${intern.firstName}! Your attendance has been recorded for today.`,
+        });
+      } else if (today.timeIn && !today.timeOut) {
+        const record: AttendanceRecord = await recordCheckOut(intern.id);
+        setScanResult({
+          status: 'success',
+          action: 'check-out',
+          time: formatTime(record.timeOut),
+          message: `Goodbye, ${intern.firstName}! Your time out has been recorded.`,
+        });
+      } else {
+        setScanResult({
+          status: 'error',
+          message:
+            'You have already checked in and out for today. See you tomorrow!',
+        });
+      }
+    } catch (e) {
+      const err = e as Error;
+      setScanResult({
+        status: 'error',
+        message: err.message || 'Failed to process the scan. Please try again.',
+      });
+    }
+  }
+
+  function resetScan() {
+    setScanResult({ status: 'idle' });
+  }
 
   if (!permission) return <ThemedView style={styles.container} />;
 
@@ -26,7 +162,9 @@ export default function ScanScreen() {
         <ThemedText themeColor="textSecondary" style={styles.centerText}>
           Allow camera access to scan your time in and time out QR code.
         </ThemedText>
-        <Pressable onPress={requestPermission} style={[styles.button, { backgroundColor: theme.primary }]}>
+        <Pressable
+          onPress={requestPermission}
+          style={[styles.button, { backgroundColor: theme.primary }]}>
           <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
             Allow camera
           </ThemedText>
@@ -40,35 +178,75 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <ThemedText type="subtitle">Scan attendance QR</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.internInfo}>
+            {intern.firstName} {intern.lastName} — {intern.id}
+          </ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.instruction}>
-            {message}
+            {scanning
+              ? 'Validating QR code and recording attendance...'
+              : 'Align the QR code inside the frame'}
           </ThemedText>
         </View>
 
         <View style={styles.scanner}>
           <CameraView
             barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-            onBarcodeScanned={scanned ? undefined : ({ data }) => {
-              setScanned(true);
-              setMessage(`Scan received: ${data}`);
-            }}
+            onBarcodeScanned={scanning ? undefined : handleBarcodeScanned}
             style={StyleSheet.absoluteFill}
           />
           <View style={[styles.frame, { borderColor: theme.primary }]} />
+
+          {scanning && (
+            <View style={styles.processingOverlay}>
+              <ActivityIndicator size="large" color={theme.primaryForeground} />
+            </View>
+          )}
         </View>
 
-        {scanned ? (
-          <Pressable
-            onPress={() => {
-              setScanned(false);
-              setMessage('Align the QR code inside the frame');
-            }}
-            style={[styles.button, { backgroundColor: theme.primary }]}>
-            <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
-              Scan again
-            </ThemedText>
-          </Pressable>
-        ) : null}
+        {scanResult.status !== 'idle' && scanResult.status !== 'processing' && (
+          <>
+            <View
+              style={[
+                styles.resultBanner,
+                scanResult.status === 'success'
+                  ? [styles.successBanner, { backgroundColor: '#dcfce7', borderColor: '#86efac' }]
+                  : [styles.errorBanner, { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }],
+              ]}>
+              {scanResult.status === 'success' ? (
+                <CheckCircle color="#16a34a" size={20} />
+              ) : (
+                <XCircle color="#dc2626" size={20} />
+              )}
+              <View style={styles.resultTextContainer}>
+                <ThemedText
+                  type="smallBold"
+                  style={{
+                    color: scanResult.status === 'success' ? '#166534' : '#991b1b',
+                  }}>
+                  {scanResult.status === 'success'
+                    ? `${scanResult.action === 'check-in' ? 'Time In' : 'Time Out'} at ${scanResult.time}`
+                    : 'Scan Failed'}
+                </ThemedText>
+                <ThemedText
+                  type="small"
+                  style={{
+                    color: scanResult.status === 'success' ? '#15803d' : '#b91c1c',
+                    marginTop: 2,
+                  }}>
+                  {scanResult.message}
+                </ThemedText>
+              </View>
+            </View>
+
+            <Pressable
+              onPress={resetScan}
+              style={[styles.button, { backgroundColor: theme.primary }]}>
+              <ThemedText style={[styles.buttonText, { color: theme.primaryForeground }]}>
+                Scan again
+              </ThemedText>
+            </Pressable>
+          </>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -78,6 +256,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: 24 },
   header: { marginBottom: 16 },
+  internInfo: { marginTop: 4 },
   instruction: { marginTop: 4 },
   centered: {
     flex: 1,
@@ -111,6 +290,31 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: '17.5%',
     backgroundColor: 'transparent',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+  },
+  successBanner: {},
+  errorBanner: {},
+  resultTextContainer: {
+    flex: 1,
+    gap: 2,
   },
   button: {
     alignItems: 'center',

@@ -43,6 +43,32 @@ export async function recordCheckIn(internId: string): Promise<AttendanceRecord>
   };
 }
 
+export async function recordCheckOut(internId: string): Promise<AttendanceRecord> {
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({ time_out: now })
+    .eq('intern_id', internId)
+    .eq('date', today)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    internId: data.intern_id,
+    date: data.date,
+    timeIn: data.time_in,
+    timeOut: data.time_out,
+    status: data.status,
+    notes: data.notes,
+    createdAt: data.created_at,
+  };
+}
+
 export async function getAttendanceByIntern(internId: string): Promise<AttendanceRecord[]> {
   const { data, error } = await supabase
     .from('attendance')
