@@ -1,20 +1,110 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Download, FileText } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Download, FileText, RefreshCw, LogOut } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
+import { useAuth } from '@/stores/authStore';
+import { getReports, type ReportRecord } from '@/services/reportService';
 
-const reports = [
-  { id: 1, name: 'Juan Dela Cruz - August 2026 DTR', generatedOn: 'Aug 20, 2026' },
-  { id: 2, name: 'Maria Santos - August 2026 DTR', generatedOn: 'Aug 20, 2026' },
-  { id: 3, name: 'Pedro Reyes - August 2026 DTR', generatedOn: 'Aug 20, 2026' },
-];
+function formatDate(dateStr: string): string {
+  try {
+    return new Date(dateStr).toLocaleDateString([], {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
-function ReportScreen() {
+const TYPE_COLORS: Record<string, string> = {
+  Attendance: '#0ea5e9',
+  Summary: '#8b5cf6',
+};
+
+export default function ReportScreen() {
   const theme = useTheme();
+  const { isAuthenticated, hasHydrated, logout } = useAuth();
+  const [reports, setReports] = useState<ReportRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
+      router.replace('/');
+    }
+  }, [hasHydrated, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let cancelled = false;
+
+    async function fetchReports() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await getReports();
+        if (!cancelled) setReports(data);
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void fetchReports();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setError(null);
+
+    getReports()
+      .then((data) => {
+        setReports(data);
+      })
+      .catch((e) => {
+        setError((e as Error).message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  const handleDownload = (report: ReportRecord) => {
+    Alert.alert(
+      'Download Report',
+      `Report "${report.title}" can be downloaded from the web dashboard.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/');
+  };
+
+  if (!hasHydrated || !isAuthenticated) {
+    return <ThemedView style={styles.container} />;
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -26,7 +116,23 @@ function ReportScreen() {
           </ThemedText>
         </View>
 
-        {reports.length === 0 ? (
+        {loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <ThemedText style={styles.error}>{error}</ThemedText>
+            <Pressable
+              onPress={handleRefresh}
+              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <RefreshCw color={theme.primary} size={20} />
+              <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
+                Retry
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : reports.length === 0 ? (
           <View style={styles.empty}>
             <FileText color={theme.textSecondary} size={48} />
             <ThemedText themeColor="textSecondary">
@@ -35,27 +141,65 @@ function ReportScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {reports.map((report) => (
-              <ThemedView key={report.id} type="card" style={styles.reportRow}>
-                <View style={styles.reportInfo}>
-                  <FileText color={theme.primary} size={20} />
-                  <View>
-                    <ThemedText type="smallBold">{report.name}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Generated on {report.generatedOn}
-                    </ThemedText>
+            {reports.map((report) => {
+              const typeColor = TYPE_COLORS[report.type] || theme.textSecondary;
+              return (
+                <ThemedView key={report.id} type="card" style={styles.reportRow}>
+                  <View style={styles.reportInfo}>
+                    <FileText color={theme.primary} size={20} />
+                    <View style={styles.reportDetails}>
+                      <ThemedText type="smallBold">{report.title}</ThemedText>
+                      <View style={styles.reportMeta}>
+                        <View style={[styles.typeBadge, { backgroundColor: `${typeColor}20` }]}>
+                          <ThemedText type="small" style={{ color: typeColor, fontWeight: 600 }}>
+                            {report.type}
+                          </ThemedText>
+                        </View>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {formatDate(report.generatedAt)}
+                        </ThemedText>
+                      </View>
+                      {report.owner ? (
+                        <ThemedText type="small" themeColor="textSecondary">
+                          Owner: {report.owner}
+                        </ThemedText>
+                      ) : null}
+                    </View>
                   </View>
-                </View>
-                <Pressable style={[styles.downloadButton, { backgroundColor: theme.primary }]}>
-                  <Download color={theme.primaryForeground} size={16} />
-                  <ThemedText style={[styles.downloadText, { color: theme.primaryForeground }]}>
-                    PDF
-                  </ThemedText>
-                </Pressable>
-              </ThemedView>
-            ))}
+
+                  <Pressable
+                    onPress={() => handleDownload(report)}
+                    style={[styles.downloadButton, { backgroundColor: theme.primary }]}>
+                    <Download color={theme.primaryForeground} size={16} />
+                    <ThemedText style={[styles.downloadText, { color: theme.primaryForeground }]}>
+                      PDF
+                    </ThemedText>
+                  </Pressable>
+                </ThemedView>
+              );
+            })}
           </View>
         )}
+
+        <View style={styles.footer}>
+          <Pressable
+            onPress={handleRefresh}
+            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <RefreshCw color={theme.primary} size={20} />
+            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
+              Refresh
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={handleLogout}
+            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <LogOut color={theme.primary} size={20} />
+            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
+              Logout
+            </ThemedText>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -66,6 +210,21 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, padding: 24 },
   header: { marginBottom: 24 },
   subtitle: { marginTop: 4 },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  error: {
+    color: '#c62828',
+    textAlign: 'center',
+  },
   empty: {
     flex: 1,
     alignItems: 'center',
@@ -86,6 +245,20 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     flex: 1,
   },
+  reportDetails: {
+    flex: 1,
+    gap: 2,
+  },
+  reportMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+  },
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
   downloadButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -98,6 +271,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  footer: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    marginTop: Spacing.four,
+  },
+  iconButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+  },
 });
-
-export default ReportScreen;
