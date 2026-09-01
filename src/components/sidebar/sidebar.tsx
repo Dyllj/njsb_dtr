@@ -3,6 +3,7 @@ import {
   BarChart3,
   CalendarClock,
   Home,
+  QrCode,
   Settings,
   Users,
 } from 'lucide-react';
@@ -13,6 +14,7 @@ function Sidebar() {
     { label: 'Interns', icon: Users, to: '/interns' },
     { label: 'Attendance', icon: CalendarClock, to: '/attendance' },
     { label: 'Report', icon: BarChart3, to: '/report' },
+    { label: 'QR Code', icon: QrCode, to: '/qrcode' },
     { label: 'Settings', icon: Settings, to: '/settings' },
   ];
 

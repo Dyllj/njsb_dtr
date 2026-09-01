@@ -54,6 +54,14 @@ create table holidays (
   created_at timestamp with time zone default now()
 );
 
+-- 6. qr_codes: generated QR codes for intern attendance check-in
+create table qr_codes (
+  id text primary key, -- e.g. 'QC-001'
+  code text not null unique, -- the unique scan code / URL path
+  is_active boolean not null default true,
+  created_at timestamp with time zone default now()
+);
+
 -- Enable Row Level Security (RLS) for all tables
 alter table profiles enable row level security;
 alter table interns enable row level security;
@@ -77,9 +85,14 @@ create policy "Allow read/write for authenticated users" on reports
 create policy "Allow read/write for authenticated users" on holidays
   for all to authenticated using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
+create policy "Allow read/write for authenticated users" on qr_codes
+  for all to authenticated using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
 -- Indexes for faster lookups
 create index idx_attendance_intern_date on attendance(intern_id, date);
 create index idx_attendance_date on attendance(date);
 create index idx_holidays_date on holidays(date);
 create index idx_interns_name on interns(first_name, last_name);
 create index idx_reports_owner on reports(owner);
+create index idx_qr_codes_active on qr_codes(is_active);
+create index idx_qr_codes_code on qr_codes(code);

@@ -9,6 +9,8 @@ import type { ReportRecord } from '@/lib/services/reportService';
 import * as reportService from '@/lib/services/reportService';
 import type { Holiday } from '@/lib/services/holidayService';
 import * as holidayService from '@/lib/services/holidayService';
+import type { QrCodeRecord } from '@/lib/services/qrCodeService';
+import * as qrCodeService from '@/lib/services/qrCodeService';
 import type { AttendanceSummary, DashboardAttendanceRow, DashboardActivityItem, WeeklyAttendanceRow } from '@/lib/services/attendanceService';
 import * as attendanceService from '@/lib/services/attendanceService';
 
@@ -181,6 +183,63 @@ export function useReports() {
   }, []);
 
   return { reports, loading, error, refetch, create, update, remove };
+}
+
+export function useQRCodes() {
+  const [qrCodes, setQRCodes] = useState<QrCodeRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await qrCodeService.getQRCodes();
+      setQRCodes(data);
+    } catch (e) {
+      setError(e as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    qrCodeService
+      .getQRCodes()
+      .then((data) => {
+        if (!cancelled) setQRCodes(data);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e as Error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const create = useCallback(async (code: string) => {
+    const newQR = await qrCodeService.createQRCode(code);
+    setQRCodes((prev) => [newQR, ...prev]);
+    return newQR;
+  }, []);
+
+  const update = useCallback(async (id: string, updates: { isActive?: boolean }) => {
+    const updated = await qrCodeService.updateQRCode(id, updates);
+    setQRCodes((prev) => prev.map((q) => (q.id === id ? updated : q)));
+    return updated;
+  }, []);
+
+  const remove = useCallback(async (id: string) => {
+    await qrCodeService.deleteQRCode(id);
+    setQRCodes((prev) => prev.filter((q) => q.id !== id));
+  }, []);
+
+  return { qrCodes, loading, error, refetch, create, update, remove };
 }
 
 export function useHolidays() {

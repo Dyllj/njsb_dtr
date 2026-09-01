@@ -139,6 +139,26 @@ export interface Database {
           created_at?: string | null;
         };
       };
+      qr_codes: {
+        Row: {
+          id: string;
+          code: string;
+          is_active: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id: string;
+          code: string;
+          is_active?: boolean;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          is_active?: boolean;
+          created_at?: string | null;
+        };
+      };
     };
   };
 }

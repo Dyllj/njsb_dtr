@@ -7,6 +7,8 @@ import Interns from './pages/interns/interns';
 import Attendance from './pages/attendance/attendance';
 import Schedule from './pages/schedule/schedule';
 import Report from './pages/report/report';
+import QrCodePage from './pages/qrCode/qrCode';
+import ScanPage from './pages/scan/scan';
 import Settings from './pages/settings/settings';
 import AcceptInvite from '@/components/acceptInvite';
 
@@ -34,7 +36,9 @@ function App() {
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/qrcode" element={<QrCodePage />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/scan/:code" element={<ScanPage />} />
         </Routes>
       </main>
     </>
