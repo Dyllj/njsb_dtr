@@ -39,6 +39,9 @@ const emptyForm: Omit<Intern, 'id'> = {
   status: 'Active',
   totalHours: 400,
   accumulatedHours: 0,
+  username: '',
+  email: '',
+  password: 'intern123',
 };
 
 function Interns() {
@@ -85,6 +88,9 @@ function Interns() {
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
     const department = form.department.trim();
+    const username = form.username?.trim() || null;
+    const email = form.email?.trim() || null;
+    const password = form.password || null;
 
     if (!firstName || !lastName || !department) return;
 
@@ -99,6 +105,9 @@ function Interns() {
         status: form.status,
         totalHours: form.totalHours,
         accumulatedHours: form.accumulatedHours,
+        username,
+        email,
+        password,
       });
       closeDialog();
     } catch (e) {
@@ -193,6 +202,54 @@ function Interns() {
                       setForm((c) => ({ ...c, department: e.target.value }))
                     }
                     placeholder="Operations"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-username" className="text-xs font-medium text-muted-foreground">
+                      Username
+                    </label>
+                    <Input
+                      id="add-intern-username"
+                      value={form.username ?? ''}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, username: e.target.value }))
+                      }
+                      placeholder="e.g. juan_d"
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="add-intern-email" className="text-xs font-medium text-muted-foreground">
+                      Account Email
+                    </label>
+                    <Input
+                      id="add-intern-email"
+                      type="email"
+                      value={form.email ?? ''}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setForm((c) => ({ ...c, email: e.target.value }))
+                      }
+                      placeholder="e.g. juan@example.com"
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="add-intern-password" className="text-xs font-medium text-muted-foreground">
+                    Password
+                  </label>
+                  <Input
+                    id="add-intern-password"
+                    type="text"
+                    value={form.password ?? ''}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setForm((c) => ({ ...c, password: e.target.value }))
+                    }
+                    placeholder="intern123"
                     disabled={submitting}
                   />
                 </div>

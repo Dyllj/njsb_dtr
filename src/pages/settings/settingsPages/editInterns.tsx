@@ -44,9 +44,9 @@ function EditInterns() {
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
     const department = form.department.trim();
-    const username = form.username.trim() || null;
-    const email = form.email.trim() || null;
-    const password = form.password || null;
+    const username = isEditing ? form.username : (form.username?.trim() || null);
+    const email = form.email?.trim() || null;
+    const password = isEditing ? null : (form.password || null);
 
     if (!firstName || !lastName || !department) return;
 
@@ -157,6 +157,7 @@ function EditInterns() {
             placeholder="e.g. juan_d"
             className="w-36"
             disabled={submitting}
+            readOnly={isEditing}
           />
         </div>
 
@@ -177,22 +178,24 @@ function EditInterns() {
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="intern-password" className="text-xs font-medium text-muted-foreground">
-            Password
-          </label>
-          <Input
-            id="intern-password"
-            type="text"
-            value={form.password ?? ''}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setForm((current) => ({ ...current, password: event.target.value }))
-            }
-            placeholder="intern123"
-            className="w-36"
-            disabled={submitting}
-          />
-        </div>
+        {!isEditing && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="intern-password" className="text-xs font-medium text-muted-foreground">
+              Password
+            </label>
+            <Input
+              id="intern-password"
+              type="text"
+              value={form.password ?? ''}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setForm((current) => ({ ...current, password: event.target.value }))
+              }
+              placeholder="intern123"
+              className="w-36"
+              disabled={submitting}
+            />
+          </div>
+        )}
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">Status</label>
