@@ -220,6 +220,9 @@ function HoursScreen() {
                         <ThemedText type="smallBold">
                           {formatDate(record.date)}
                         </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {record.session}
+                        </ThemedText>
                       </View>
                       <View style={styles.attendanceTimes}>
                         <ThemedText type="small">

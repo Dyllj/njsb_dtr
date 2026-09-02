@@ -72,6 +72,7 @@ export interface Database {
           id: string;
           intern_id: string;
           date: string;
+          session: 'AM' | 'PM';
           time_in: string | null;
           time_out: string | null;
           status: 'PRESENT' | 'ABSENT' | 'LATE' | 'UNDERTIME';
@@ -82,6 +83,7 @@ export interface Database {
           id?: string;
           intern_id: string;
           date: string;
+          session?: 'AM' | 'PM';
           time_in?: string | null;
           time_out?: string | null;
           status?: 'PRESENT' | 'ABSENT' | 'LATE' | 'UNDERTIME';
@@ -92,6 +94,7 @@ export interface Database {
           id?: string;
           intern_id?: string;
           date?: string;
+          session?: 'AM' | 'PM';
           time_in?: string | null;
           time_out?: string | null;
           status?: 'PRESENT' | 'ABSENT' | 'LATE' | 'UNDERTIME';

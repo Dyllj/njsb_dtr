@@ -21,6 +21,7 @@ type AttendanceStatus = 'WORKING' | 'COMPLETE' | 'UNDERTIME' | 'ABSENT' | 'LATE'
 
 export type AttendanceRow = {
   intern: string;
+  session: 'AM' | 'PM';
   timeIn: string;
   timeOut: string;
   status: AttendanceStatus;
@@ -77,6 +78,7 @@ function AttendanceOverviewCard({ rows, loading, error }: AttendanceOverviewCard
           <TableHeader>
             <TableRow>
               <TableHead>Intern</TableHead>
+              <TableHead>Session</TableHead>
               <TableHead>Time In</TableHead>
               <TableHead>Time Out</TableHead>
               <TableHead>Status</TableHead>
@@ -85,14 +87,15 @@ function AttendanceOverviewCard({ rows, loading, error }: AttendanceOverviewCard
           <TableBody>
             {!rows || rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No attendance records for today.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.intern}>
+                <TableRow key={`${row.intern}-${row.session}`}>
                   <TableCell className="font-medium">{row.intern}</TableCell>
+                  <TableCell>{row.session}</TableCell>
                   <TableCell>{row.timeIn}</TableCell>
                   <TableCell>{row.timeOut}</TableCell>
                   <TableCell>

@@ -25,18 +25,29 @@ create table interns (
   created_at timestamp with time zone default now()
 );
 
--- 3. attendance: daily attendance records per intern
+-- 3. attendance: daily attendance records per intern per session
 create table attendance (
   id uuid default gen_random_uuid() primary key,
   intern_id text references interns on delete cascade not null,
   date date not null,
+  session text not null default 'AM' check (session in ('AM', 'PM')),
   time_in time without time zone,
   time_out time without time zone,
   status text not null default 'PRESENT' check (status in ('PRESENT', 'ABSENT', 'LATE', 'UNDERTIME')),
   notes text,
   created_at timestamp with time zone default now(),
-  unique (intern_id, date)
+  unique (intern_id, date, session)
 );
+
+-- Backfill: assign existing rows to the AM session so the new unique
+-- constraint (intern_id, date, session) is not violated by legacy data.
+update attendance set session = 'AM' where session is null;
+
+-- Migration for existing databases: add session column and rebuild unique index
+alter table attendance add column if not exists session text default 'AM' check (session in ('AM', 'PM'));
+update attendance set session = 'AM' where session is null;
+alter table attendance drop constraint if exists attendance_intern_id_date_key;
+alter table attendance add constraint if not exists attendance_intern_id_date_session_key unique (intern_id, date, session);
 
 -- 4. reports: generated reports
 create table reports (

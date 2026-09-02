@@ -16,10 +16,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/stores/authStore';
 import { validateQRCode, type QrCodeRecord } from '@/services/qrCodeService';
 import {
-  getTodayAttendance,
+  getTodaySessions,
   recordCheckIn,
   recordCheckOut,
+  getCurrentSession,
   type AttendanceRecord,
+  type AttendanceSession,
 } from '@/services/attendanceService';
 
 /**
@@ -71,6 +73,7 @@ type ScanResult =
   | {
       status: 'success';
       action: 'check-in' | 'check-out';
+      session: AttendanceSession;
       time: string;
       message: string;
     }
@@ -112,31 +115,73 @@ export default function ScanScreen() {
         return;
       }
 
-      const today: AttendanceRecord | null = await getTodayAttendance(intern.id);
+      const { am, pm } = await getTodaySessions(intern.id);
+      const currentSession = getCurrentSession();
+      const currentRow = currentSession === 'AM' ? am : pm;
+      const otherRow = currentSession === 'AM' ? pm : am;
 
-      if (!today || !today.timeIn) {
-        const record: AttendanceRecord = await recordCheckIn(intern.id);
-        setScanResult({
-          status: 'success',
-          action: 'check-in',
-          time: formatTime(record.timeIn),
-          message: `Welcome, ${intern.firstName}! Your attendance has been recorded for today.`,
-        });
-      } else if (today.timeIn && !today.timeOut) {
-        const record: AttendanceRecord = await recordCheckOut(intern.id);
+      // 4-state decision tree per session.
+      // Each intern can have up to 2 check-in/out cycles per day (AM + PM).
+      // The QR is a presence signal — the action is inferred from which
+      // session is "open" (time_in set, time_out not yet set) for this intern.
+      if (currentRow && currentRow.timeIn && !currentRow.timeOut) {
+        // Current session is open → this is the time OUT for that session
+        const record: AttendanceRecord = await recordCheckOut(intern.id, currentSession);
         setScanResult({
           status: 'success',
           action: 'check-out',
+          session: currentSession,
           time: formatTime(record.timeOut),
-          message: `Goodbye, ${intern.firstName}! Your time out has been recorded.`,
+          message: `Goodbye, ${intern.firstName}! Your ${currentSession} time out has been recorded.`,
         });
-      } else {
-        setScanResult({
-          status: 'error',
-          message:
-            'You have already checked in and out for today. See you tomorrow!',
-        });
+        return;
       }
+
+      if (!currentRow || !currentRow.timeIn) {
+        // No time-in yet for the current session → this is the time IN
+        const record: AttendanceRecord = await recordCheckIn(intern.id, currentSession);
+        setScanResult({
+          status: 'success',
+          action: 'check-in',
+          session: currentSession,
+          time: formatTime(record.timeIn),
+          message: `Welcome, ${intern.firstName}! Your ${currentSession} time in has been recorded.`,
+        });
+        return;
+      }
+
+      // Current session is fully done (both time_in and time_out set).
+      // If the other session is open, this scan records that one.
+      if (otherRow && otherRow.timeIn && !otherRow.timeOut) {
+        const record: AttendanceRecord = await recordCheckOut(intern.id, otherRow.session);
+        setScanResult({
+          status: 'success',
+          action: 'check-out',
+          session: otherRow.session,
+          time: formatTime(record.timeOut),
+          message: `Goodbye, ${intern.firstName}! Your ${otherRow.session} time out has been recorded.`,
+        });
+        return;
+      }
+
+      if (!otherRow || !otherRow.timeIn) {
+        const record: AttendanceRecord = await recordCheckIn(intern.id, otherRow?.session ?? (currentSession === 'AM' ? 'PM' : 'AM'));
+        setScanResult({
+          status: 'success',
+          action: 'check-in',
+          session: record.session,
+          time: formatTime(record.timeIn),
+          message: `Welcome, ${intern.firstName}! Your ${record.session} time in has been recorded.`,
+        });
+        return;
+      }
+
+      // Both AM and PM are fully complete
+      setScanResult({
+        status: 'error',
+        message:
+          'You have already completed both AM and PM attendance for today. See you tomorrow!',
+      });
     } catch (e) {
       const err = e as Error;
       setScanResult({
@@ -224,7 +269,7 @@ export default function ScanScreen() {
                     color: scanResult.status === 'success' ? '#166534' : '#991b1b',
                   }}>
                   {scanResult.status === 'success'
-                    ? `${scanResult.action === 'check-in' ? 'Time In' : 'Time Out'} at ${scanResult.time}`
+                    ? `${scanResult.action === 'check-in' ? 'Time In' : 'Time Out'} (${scanResult.session}) at ${scanResult.time}`
                     : 'Scan Failed'}
                 </ThemedText>
                 <ThemedText

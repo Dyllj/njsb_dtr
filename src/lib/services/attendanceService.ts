@@ -4,6 +4,16 @@ import type { Database } from '@/lib/database.types';
 type AttendanceRow = Database['public']['Tables']['attendance']['Row'];
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'UNDERTIME';
+export type AttendanceSession = 'AM' | 'PM';
+
+/**
+ * Returns the current session based on local time:
+ * - AM: 00:00 to 11:59
+ * - PM: 12:00 to 23:59
+ */
+export function getCurrentSession(now: Date = new Date()): AttendanceSession {
+  return now.getHours() < 12 ? 'AM' : 'PM';
+}
 
 export type AttendanceSummary = {
   present: number;
@@ -138,6 +148,7 @@ export async function getInternStats(): Promise<{
   ]);
 
   const presentRows = presentData?.data ?? [];
+  // Working now: rows with no time_out yet (currently checked in for that session)
   const workingNow = presentRows.filter((r: AttendanceRow) => !r.time_out).length;
 
   return {
@@ -204,19 +215,24 @@ export async function getWeeklyAttendanceGrid(): Promise<WeeklyAttendanceRow[]> 
 
     const dateIdx = dates.indexOf(row.date);
     if (dateIdx >= 0) {
-      switch (row.status) {
-        case 'PRESENT':
-          internMap[internId].dailyStatus[dateIdx] = 'present';
-          break;
-        case 'ABSENT':
-          internMap[internId].dailyStatus[dateIdx] = 'absent';
-          break;
-        case 'LATE':
-          internMap[internId].dailyStatus[dateIdx] = 'late';
-          break;
-        case 'UNDERTIME':
-          internMap[internId].dailyStatus[dateIdx] = 'undftime';
-          break;
+      // Priority for the day cell: LATE > UNDERTIME > PRESENT > ABSENT.
+      // This way a day with one LATE session still shows as LATE.
+      const current = internMap[internId].dailyStatus[dateIdx];
+      const next = (() => {
+        switch (row.status) {
+          case 'PRESENT': return 'present' as const;
+          case 'ABSENT': return 'absent' as const;
+          case 'LATE': return 'late' as const;
+          case 'UNDERTIME': return 'undftime' as const;
+          default: return current;
+        }
+      })();
+
+      const priority: Record<string, number> = {
+        '—': 0, present: 1, undftime: 2, absent: 3, late: 4,
+      };
+      if (priority[next] > priority[current]) {
+        internMap[internId].dailyStatus[dateIdx] = next;
       }
     }
   });
@@ -226,6 +242,7 @@ export async function getWeeklyAttendanceGrid(): Promise<WeeklyAttendanceRow[]> 
 
 export type DashboardAttendanceRow = {
   intern: string;
+  session: AttendanceSession;
   timeIn: string;
   timeOut: string;
   status: 'WORKING' | 'COMPLETE' | 'UNDERTIME' | 'ABSENT' | 'LATE';
@@ -265,6 +282,7 @@ export async function getTodayAttendanceRows(): Promise<DashboardAttendanceRow[]
 
     return {
       intern: internName,
+      session: (row.session ?? 'AM') as AttendanceSession,
       timeIn: formatTime(row.time_in),
       timeOut: formatTime(row.time_out),
       status,
@@ -276,6 +294,7 @@ export type DashboardActivityItem = {
   intern: string;
   action: string;
   time: string;
+  session: AttendanceSession;
 };
 
 export async function getRecentActivity(limit = 5): Promise<DashboardActivityItem[]> {
@@ -298,20 +317,95 @@ export async function getRecentActivity(limit = 5): Promise<DashboardActivityIte
       ? `${row.interns.first_name} ${row.interns.last_name}`.trim()
       : 'Unknown';
 
+    const session = (row.session ?? 'AM') as AttendanceSession;
     let action: string;
     let time: string;
 
     if (row.time_out) {
-      action = 'Time out';
+      action = `Time out (${session})`;
       time = formatTime(row.time_out);
     } else if (row.time_in) {
-      action = row.status === 'ABSENT' ? 'Marked absent' : 'Time in';
+      action = row.status === 'ABSENT' ? `Marked absent (${session})` : `Time in (${session})`;
       time = formatTime(row.time_in);
     } else {
-      action = 'Marked absent';
+      action = `Marked absent (${session})`;
       time = '—';
     }
 
-    return { intern: internName, action, time };
+    return { intern: internName, action, time, session };
   });
+}
+
+/**
+ * Record a time-in for the given intern on the given session (AM/PM).
+ * Uses upsert on (intern_id, date, session) so re-scanning does not duplicate.
+ */
+export async function recordCheckInSession(
+  internId: string,
+  session: AttendanceSession,
+  options: { date?: string; now?: string } = {}
+): Promise<AttendanceRow> {
+  const date = options.date ?? new Date().toISOString().split('T')[0];
+  const timeIn = options.now ?? new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .upsert(
+      {
+        intern_id: internId,
+        date,
+        session,
+        time_in: timeIn,
+        status: 'PRESENT',
+      },
+      { onConflict: 'intern_id,date,session' }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as AttendanceRow;
+}
+
+/**
+ * Record a time-out for the given intern on the given session (AM/PM).
+ * Only updates the matching row; never touches other sessions.
+ */
+export async function recordCheckOutSession(
+  internId: string,
+  session: AttendanceSession,
+  options: { date?: string; now?: string } = {}
+): Promise<AttendanceRow> {
+  const date = options.date ?? new Date().toISOString().split('T')[0];
+  const timeOut = options.now ?? new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .update({ time_out: timeOut })
+    .eq('intern_id', internId)
+    .eq('date', date)
+    .eq('session', session)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as AttendanceRow;
+}
+
+/**
+ * Fetch all attendance rows for one intern on a given date, one per session.
+ */
+export async function getAttendanceForDay(
+  internId: string,
+  date: string
+): Promise<AttendanceRow[]> {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('intern_id', internId)
+    .eq('date', date)
+    .order('session');
+
+  if (error) throw error;
+  return (data ?? []) as AttendanceRow[];
 }

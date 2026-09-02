@@ -5,9 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { useQRCodes } from '@/lib/hooks/useSupabaseData';
 import { useInterns } from '@/lib/hooks/useSupabaseData';
+import {
+  getAttendanceForDay,
+  recordCheckInSession,
+  recordCheckOutSession,
+  getCurrentSession,
+  type AttendanceSession,
+} from '@/lib/services/attendanceService';
 
 function ScanPage() {
   const { code } = useParams<{ code: string }>();
@@ -15,6 +29,7 @@ function ScanPage() {
   const { interns, refetch } = useInterns();
 
   const [internId, setInternId] = useState('');
+  const [session, setSession] = useState<AttendanceSession>(getCurrentSession());
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'success' | 'error' | null>(null);
   const [message, setMessage] = useState('');
@@ -71,21 +86,30 @@ function ScanPage() {
     setSubmitting(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const { supabase } = await import('@/lib/supabase');
+      const supabase = (await import('@/lib/supabase')).supabase;
 
-      const { error } = await supabase.from('attendance').upsert({
-        intern_id: intern.id,
-        date: today,
-        time_in: new Date().toISOString(),
-        status: 'PRESENT',
-      }, {
-        onConflict: 'intern_id,date',
-      });
+      // Find the existing row for this (intern, date, session) to decide
+      // whether to time-in or time-out.
+      const rows = await getAttendanceForDay(intern.id, today);
+      const existing = rows.find((r) => r.session === session);
 
-      if (error) throw error;
+      if (existing && existing.time_in && !existing.time_out) {
+        // Open session → time out
+        await recordCheckOutSession(intern.id, session, { date: today });
+        setResult('success');
+        setMessage(`Goodbye, ${intern.firstName}! Your ${session} time out has been recorded.`);
+      } else if (!existing || !existing.time_in) {
+        // No time-in yet for this session → time in
+        await recordCheckInSession(intern.id, session, { date: today });
+        setResult('success');
+        setMessage(`Welcome, ${intern.firstName}! Your ${session} time in has been recorded.`);
+      } else {
+        // Both time_in and time_out already set for this session
+        setResult('error');
+        setMessage(`You have already completed ${session} attendance for today.`);
+        return;
+      }
 
-      setResult('success');
-      setMessage(`Welcome, ${intern.firstName}! Your attendance has been recorded for today.`);
       setInternId('');
       await refetch();
     } catch (e) {
@@ -119,6 +143,25 @@ function ScanPage() {
                 <p className="text-sm text-muted-foreground">
                   Scan verified. Enter your Intern ID below to record your attendance for today.
                 </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="session" className="text-xs font-medium text-muted-foreground">
+                  Session
+                </label>
+                <Select
+                  value={session}
+                  onValueChange={(v) => setSession(v as AttendanceSession)}
+                  disabled={submitting}
+                >
+                  <SelectTrigger id="session" size="sm" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">Morning (AM)</SelectItem>
+                    <SelectItem value="PM">Afternoon (PM)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-col gap-1.5">
