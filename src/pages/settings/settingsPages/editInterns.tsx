@@ -29,7 +29,7 @@ function formatHours(h: number) {
   return `${h.toFixed(2)} hrs`;
 }
 
-const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active', totalHours: 400, accumulatedHours: 0 };
+const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active', totalHours: 400, accumulatedHours: 0, username: '', email: '', password: 'intern123' };
 
 function EditInterns() {
   const { interns, loading, error, create, update, remove } = useInterns();
@@ -44,6 +44,9 @@ function EditInterns() {
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
     const department = form.department.trim();
+    const username = form.username.trim() || null;
+    const email = form.email.trim() || null;
+    const password = form.password || null;
 
     if (!firstName || !lastName || !department) return;
 
@@ -51,9 +54,9 @@ function EditInterns() {
 
     try {
       if (isEditing) {
-        await update(form.id, { firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours });
+        await update(form.id, { firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
       } else {
-        await create({ firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours });
+        await create({ firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
       }
       setForm(emptyForm);
     } finally {
@@ -62,7 +65,7 @@ function EditInterns() {
   };
 
   const handleEdit = (intern: InternRecord) => {
-    setForm(intern);
+    setForm({ ...intern, password: '' });
   };
 
   const handleDelete = async (id: string) => {
@@ -137,6 +140,56 @@ function EditInterns() {
             }
             placeholder="Operations"
             className="w-40"
+            disabled={submitting}
+          />
+         </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="intern-username" className="text-xs font-medium text-muted-foreground">
+            Username
+          </label>
+          <Input
+            id="intern-username"
+            value={form.username ?? ''}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setForm((current) => ({ ...current, username: event.target.value }))
+            }
+            placeholder="e.g. juan_d"
+            className="w-36"
+            disabled={submitting}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="intern-email" className="text-xs font-medium text-muted-foreground">
+            Account Email
+          </label>
+          <Input
+            id="intern-email"
+            type="email"
+            value={form.email ?? ''}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setForm((current) => ({ ...current, email: event.target.value }))
+            }
+            placeholder="e.g. juan@example.com"
+            className="w-48"
+            disabled={submitting}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="intern-password" className="text-xs font-medium text-muted-foreground">
+            Password
+          </label>
+          <Input
+            id="intern-password"
+            type="text"
+            value={form.password ?? ''}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setForm((current) => ({ ...current, password: event.target.value }))
+            }
+            placeholder="intern123"
+            className="w-36"
             disabled={submitting}
           />
         </div>

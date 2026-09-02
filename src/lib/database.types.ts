@@ -38,6 +38,9 @@ export interface Database {
           status: 'Active' | 'Inactive';
           total_hours: number;
           accumulated_hours: number;
+          username: string | null;
+          email: string | null;
+          password: string | null;
           created_at: string | null;
         };
         Insert: {
@@ -48,6 +51,9 @@ export interface Database {
           status?: 'Active' | 'Inactive';
           total_hours?: number;
           accumulated_hours?: number;
+          username?: string | null;
+          email?: string | null;
+          password?: string | null;
           created_at?: string | null;
         };
         Update: {
@@ -58,6 +64,9 @@ export interface Database {
           status?: 'Active' | 'Inactive';
           total_hours?: number;
           accumulated_hours?: number;
+          username?: string | null;
+          email?: string | null;
+          password?: string | null;
           created_at?: string | null;
         };
       };

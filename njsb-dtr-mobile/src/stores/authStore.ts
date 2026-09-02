@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 
-import { getInternById, type InternProfile } from '@/services/internService';
+import { loginIntern, type InternProfile } from '@/services/internService';
 
 /**
  * A StateStorage adapter backed by expo-secure-store, compatible with
@@ -24,7 +24,7 @@ export interface AuthState {
   intern: InternProfile | null;
   hasHydrated: boolean;
   isLoading: boolean;
-  login: (internId: string) => Promise<InternProfile>;
+  login: (internId: string, password: string) => Promise<InternProfile>;
   logout: () => void;
 }
 
@@ -35,18 +35,10 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
       isLoading: false,
 
-      login: async (internId: string) => {
+      login: async (internId: string, password: string) => {
         set({ isLoading: true });
         try {
-          const intern = await getInternById(internId.trim());
-          if (!intern) {
-            throw new Error('Intern not found. Please check your Intern ID.');
-          }
-          if (intern.status !== 'Active') {
-            throw new Error(
-              'This intern account is inactive. Contact your administrator.'
-            );
-          }
+          const intern = await loginIntern(internId.trim(), password);
           set({ intern });
           return intern;
         } finally {

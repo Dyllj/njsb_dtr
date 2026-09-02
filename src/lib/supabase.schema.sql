@@ -20,6 +20,9 @@ create table interns (
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
   total_hours numeric not null default 0,
   accumulated_hours numeric not null default 0,
+  username text, -- login username for mobile app
+  email text unique, -- account email
+  password text, -- login password (default: intern123)
   created_at timestamp with time zone default now()
 );
 

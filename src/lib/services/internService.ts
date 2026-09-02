@@ -13,6 +13,9 @@ export type Intern = {
   status: 'Active' | 'Inactive';
   totalHours: number;
   accumulatedHours: number;
+  username: string | null;
+  email: string | null;
+  password: string | null;
 };
 
 export async function getInterns(): Promise<Intern[]> {
@@ -31,6 +34,9 @@ export async function getInterns(): Promise<Intern[]> {
     status: row.status as 'Active' | 'Inactive',
     totalHours: Number(row.total_hours),
     accumulatedHours: Number(row.accumulated_hours),
+    username: row.username,
+    email: row.email,
+    password: row.password,
   }));
 }
 
@@ -53,6 +59,9 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     status: intern.status,
     total_hours: intern.totalHours,
     accumulated_hours: intern.accumulatedHours,
+    username: intern.username,
+    email: intern.email,
+    password: intern.password,
   };
 
   const { data, error } = await supabase.from('interns').insert(insertData).select().single();
@@ -67,6 +76,9 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     status: data.status as 'Active' | 'Inactive',
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),
+    username: data.username,
+    email: data.email,
+    password: data.password,
   };
 }
 
@@ -78,7 +90,14 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
     status: intern.status,
     total_hours: intern.totalHours,
     accumulated_hours: intern.accumulatedHours,
+    username: intern.username,
+    email: intern.email,
   };
+
+  // Only update password if a new one is provided (null = keep existing)
+  if (intern.password) {
+    updateData.password = intern.password;
+  }
 
   const { data, error } = await supabase
     .from('interns')
@@ -97,6 +116,9 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
     status: data.status as 'Active' | 'Inactive',
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),
+    username: data.username,
+    email: data.email,
+    password: data.password,
   };
 }
 

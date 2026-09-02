@@ -43,10 +43,14 @@ export default function HomeScreen() {
       setError('Enter your Intern ID to continue.');
       return;
     }
+    if (!password.trim()) {
+      setError('Enter your password to continue.');
+      return;
+    }
 
     setError('');
     try {
-      await login(internId.trim());
+      await login(internId.trim(), password.trim());
       router.replace('/(tabs)/scan');
     } catch (e) {
       setError((e as Error).message);
@@ -97,7 +101,7 @@ export default function HomeScreen() {
 
             <ThemedView type="backgroundElement" style={styles.credentialsCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Enter the Intern ID provided by your administrator.
+                Enter your Intern ID and password to sign in.
               </ThemedText>
             </ThemedView>
 
