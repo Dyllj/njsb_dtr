@@ -35,7 +35,6 @@ import type { Intern } from '@/lib/services/internService';
 const emptyForm: Omit<Intern, 'id'> = {
   firstName: '',
   lastName: '',
-  department: '',
   status: 'Active',
   totalHours: 400,
   accumulatedHours: 0,
@@ -56,7 +55,7 @@ function Interns() {
     const q = query.trim().toLowerCase();
     if (!q) return interns;
     return interns.filter((it) =>
-      [it.id, it.firstName, it.lastName, it.department]
+      [it.id, it.firstName, it.lastName]
         .join(' ')
         .toLowerCase()
         .includes(q)
@@ -87,12 +86,11 @@ function Interns() {
 
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
-    const department = form.department.trim();
     const username = form.username?.trim() || null;
     const email = form.email?.trim() || null;
     const password = form.password || null;
 
-    if (!firstName || !lastName || !department) return;
+    if (!firstName || !lastName) return;
 
     setSubmitError(null);
     setSubmitting(true);
@@ -101,7 +99,6 @@ function Interns() {
       await create({
         firstName,
         lastName,
-        department,
         status: form.status,
         totalHours: form.totalHours,
         accumulatedHours: form.accumulatedHours,
@@ -140,7 +137,7 @@ function Interns() {
               type="search"
               value={query}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              placeholder="Search by ID, name, or department"
+              placeholder="Search by ID or name"
               className="w-72 pl-9 rounded-md border py-2 px-2 focus:outline-none focus:ring-2"
             />
           </div>
@@ -189,21 +186,6 @@ function Interns() {
                       disabled={submitting}
                     />
                   </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="add-intern-dept" className="text-xs font-medium text-muted-foreground">
-                    Department
-                  </label>
-                  <Input
-                    id="add-intern-dept"
-                    value={form.department}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setForm((c) => ({ ...c, department: e.target.value }))
-                    }
-                    placeholder="Operations"
-                    disabled={submitting}
-                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -334,7 +316,6 @@ function Interns() {
                 <TableHead>ID</TableHead>
                 <TableHead>First name</TableHead>
                 <TableHead>Last name</TableHead>
-                <TableHead>Department</TableHead>
                 <TableHead className="text-right">Total hours</TableHead>
                 <TableHead className="text-right">Accumulated hours</TableHead>
                 <TableHead className="text-right">Remaining hours</TableHead>
@@ -343,7 +324,7 @@ function Interns() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No interns found.
                   </TableCell>
                 </TableRow>
@@ -355,7 +336,6 @@ function Interns() {
                       <TableCell>{it.id}</TableCell>
                       <TableCell>{it.firstName}</TableCell>
                       <TableCell>{it.lastName}</TableCell>
-                      <TableCell>{it.department}</TableCell>
                       <TableCell className="text-right">{formatHours(it.totalHours)}</TableCell>
                       <TableCell className="text-right">{formatHours(it.accumulatedHours)}</TableCell>
                       <TableCell className="text-right">{formatHours(remaining)}</TableCell>

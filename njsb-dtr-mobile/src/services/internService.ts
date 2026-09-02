@@ -4,7 +4,6 @@ export type InternProfile = {
   id: string;
   firstName: string;
   lastName: string;
-  department: string;
   status: string;
   totalHours: number;
   accumulatedHours: number;
@@ -26,7 +25,6 @@ export async function getInternById(id: string): Promise<InternProfile | null> {
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    department: data.department,
     status: data.status,
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),
@@ -57,7 +55,6 @@ export async function loginIntern(internId: string, password: string): Promise<I
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    department: data.department,
     status: data.status,
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),
@@ -78,7 +75,6 @@ export async function getInterns(): Promise<InternProfile[]> {
     id: row.id,
     firstName: row.first_name,
     lastName: row.last_name,
-    department: row.department,
     status: row.status,
     totalHours: Number(row.total_hours),
     accumulatedHours: Number(row.accumulated_hours),
@@ -90,7 +86,6 @@ export async function getInterns(): Promise<InternProfile[]> {
 export type InternProfileUpdate = {
   firstName?: string;
   lastName?: string;
-  department?: string;
   username?: string | null;
   email?: string | null;
   password?: string | null;
@@ -104,7 +99,6 @@ export async function updateInternProfile(
 
   if (updates.firstName !== undefined) updateData.first_name = updates.firstName;
   if (updates.lastName !== undefined) updateData.last_name = updates.lastName;
-  if (updates.department !== undefined) updateData.department = updates.department;
   if (updates.username !== undefined) updateData.username = updates.username;
   if (updates.email !== undefined) updateData.email = updates.email;
 
@@ -126,7 +120,6 @@ export async function updateInternProfile(
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    department: data.department,
     status: data.status,
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),

@@ -9,7 +9,6 @@ export type Intern = {
   id: string;
   firstName: string;
   lastName: string;
-  department: string;
   status: 'Active' | 'Inactive';
   totalHours: number;
   accumulatedHours: number;
@@ -30,7 +29,6 @@ export async function getInterns(): Promise<Intern[]> {
     id: row.id,
     firstName: row.first_name,
     lastName: row.last_name,
-    department: row.department,
     status: row.status as 'Active' | 'Inactive',
     totalHours: Number(row.total_hours),
     accumulatedHours: Number(row.accumulated_hours),
@@ -55,7 +53,6 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     id: `I-${Date.now().toString(36).toUpperCase()}`,
     first_name: intern.firstName,
     last_name: intern.lastName,
-    department: intern.department,
     status: intern.status,
     total_hours: intern.totalHours,
     accumulated_hours: intern.accumulatedHours,
@@ -72,7 +69,6 @@ export async function createIntern(intern: Omit<Intern, 'id'>): Promise<Intern> 
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    department: data.department,
     status: data.status as 'Active' | 'Inactive',
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),
@@ -86,7 +82,6 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
   const updateData: InternUpdate = {
     first_name: intern.firstName,
     last_name: intern.lastName,
-    department: intern.department,
     status: intern.status,
     total_hours: intern.totalHours,
     accumulated_hours: intern.accumulatedHours,
@@ -112,7 +107,6 @@ export async function updateIntern(id: string, intern: Omit<Intern, 'id'>): Prom
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    department: data.department,
     status: data.status as 'Active' | 'Inactive',
     totalHours: Number(data.total_hours),
     accumulatedHours: Number(data.accumulated_hours),

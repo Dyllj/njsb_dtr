@@ -16,7 +16,6 @@ create table interns (
   id text primary key, -- e.g. 'I-001'
   first_name text not null,
   last_name text not null,
-  department text not null,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
   total_hours numeric not null default 0,
   accumulated_hours numeric not null default 0,
@@ -99,3 +98,6 @@ create index idx_interns_name on interns(first_name, last_name);
 create index idx_reports_owner on reports(owner);
 create index idx_qr_codes_active on qr_codes(is_active);
 create index idx_qr_codes_code on qr_codes(code);
+
+-- Migration: remove department column from interns
+alter table interns drop column if exists department;

@@ -29,7 +29,7 @@ function formatHours(h: number) {
   return `${h.toFixed(2)} hrs`;
 }
 
-const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', department: '', status: 'Active', totalHours: 400, accumulatedHours: 0, username: '', email: '', password: 'intern123' };
+const emptyForm: InternRecord = { id: '', firstName: '', lastName: '', status: 'Active', totalHours: 400, accumulatedHours: 0, username: '', email: '', password: 'intern123' };
 
 function EditInterns() {
   const { interns, loading, error, create, update, remove } = useInterns();
@@ -43,20 +43,19 @@ function EditInterns() {
 
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
-    const department = form.department.trim();
     const username = isEditing ? form.username : (form.username?.trim() || null);
     const email = form.email?.trim() || null;
     const password = isEditing ? null : (form.password || null);
 
-    if (!firstName || !lastName || !department) return;
+    if (!firstName || !lastName) return;
 
     setSubmitting(true);
 
     try {
       if (isEditing) {
-        await update(form.id, { firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
+        await update(form.id, { firstName, lastName, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
       } else {
-        await create({ firstName, lastName, department, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
+        await create({ firstName, lastName, status: form.status, totalHours: form.totalHours, accumulatedHours: form.accumulatedHours, username, email, password });
       }
       setForm(emptyForm);
     } finally {
@@ -124,22 +123,6 @@ function EditInterns() {
             }
             placeholder="Garcia"
             className="w-36"
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="intern-dept" className="text-xs font-medium text-muted-foreground">
-            Department
-          </label>
-          <Input
-            id="intern-dept"
-            value={form.department}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setForm((current) => ({ ...current, department: event.target.value }))
-            }
-            placeholder="Operations"
-            className="w-40"
             disabled={submitting}
           />
          </div>
@@ -267,7 +250,6 @@ function EditInterns() {
           <TableHeader>
             <TableRow>
               <TableHead>Intern</TableHead>
-              <TableHead>Department</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -275,7 +257,7 @@ function EditInterns() {
           <TableBody>
             {interns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
                   No interns yet.
                 </TableCell>
               </TableRow>
@@ -290,7 +272,6 @@ function EditInterns() {
                       {intern.id} · {formatHours(Math.max(0, intern.totalHours - intern.accumulatedHours))} left
                     </p>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{intern.department}</TableCell>
                   <TableCell>
                     <Badge variant={intern.status === 'Active' ? 'default' : 'outline'}>
                       {intern.status}
