@@ -1,4 +1,4 @@
-import { BarChart3, Clock, ScanLine } from 'lucide-react-native';
+import { BarChart3, CalendarRange, Clock, ScanLine } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -29,18 +29,28 @@ export default function AppTabs() {
       <Tabs.Screen
         name="scan"
         options={{
+          title: 'Scan',
           tabBarIcon: ({ color }) => <ScanLine color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="hours"
         options={{
+          title: 'Hours',
           tabBarIcon: ({ color }) => <Clock color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dtr"
+        options={{
+          title: 'DTR',
+          tabBarIcon: ({ color }) => <CalendarRange color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="report"
         options={{
+          title: 'Report',
           tabBarIcon: ({ color }) => <BarChart3 color={color} size={22} />,
         }}
       />

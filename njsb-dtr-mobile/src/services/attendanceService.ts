@@ -158,6 +158,46 @@ export async function getAttendanceByIntern(internId: string): Promise<Attendanc
   }));
 }
 
+/**
+ * Fetch all attendance rows for an intern within a calendar month.
+ * Used by the DTR (Daily Time Record) screen.
+ *
+ * @param internId The intern's ID (e.g. 'I-001')
+ * @param year 4-digit year (e.g. 2026)
+ * @param month 0-indexed month (0 = January, 11 = December)
+ */
+export async function getDtrForMonth(
+  internId: string,
+  year: number,
+  month: number
+): Promise<AttendanceRecord[]> {
+  const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('intern_id', internId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    internId: row.intern_id,
+    date: row.date,
+    session: (row.session ?? 'AM') as AttendanceSession,
+    timeIn: row.time_in,
+    timeOut: row.time_out,
+    status: row.status,
+    notes: row.notes,
+    createdAt: row.created_at,
+  }));
+}
+
 export async function getTodayAttendance(internId: string): Promise<AttendanceRecord | null> {
   const today = new Date().toISOString().split('T')[0];
 
