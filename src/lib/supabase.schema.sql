@@ -49,6 +49,43 @@ update attendance set session = 'AM' where session is null;
 alter table attendance drop constraint if exists attendance_intern_id_date_key;
 alter table attendance add constraint if not exists attendance_intern_id_date_session_key unique (intern_id, date, session);
 
+-- =============================================================================
+-- Mobile-app (anon key) access policies
+-- The mobile app authenticates interns by reading the `password` column on
+-- `interns` directly. It uses the anon public key (no Supabase Auth), so the
+-- `to authenticated` policy above blocks it. These `to anon` policies grant
+-- the mobile app just enough access to log in and record attendance.
+-- =============================================================================
+
+-- Allow anonymous (mobile) read of `interns` so login can validate credentials.
+create policy "Allow anon to read interns" on interns
+  for select to anon
+  using (true);
+
+-- Allow anonymous read of `attendance` so the mobile app can show history
+-- and decide time-in vs. time-out.
+create policy "Allow anon to read attendance" on attendance
+  for select to anon
+  using (true);
+
+-- Allow anonymous insert of `attendance` (time-in: creates a new row).
+create policy "Allow anon to insert attendance" on attendance
+  for insert to anon
+  with check (true);
+
+-- Allow anonymous update of `attendance` (time-out: writes time_out on an
+-- existing row). Restricting to anon keeps the policy intent clear.
+create policy "Allow anon to update attendance" on attendance
+  for update to anon
+  using (true)
+  with check (true);
+
+-- Allow anonymous read of `qr_codes` so the mobile app can validate that
+-- a scanned QR is currently active.
+create policy "Allow anon to read active qr_codes" on qr_codes
+  for select to anon
+  using (is_active = true);
+
 -- 4. reports: generated reports
 create table reports (
   id text primary key, -- e.g. 'R-001'
