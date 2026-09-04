@@ -8,12 +8,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { CalendarRange, ChevronLeft, ChevronRight, FileDown, RefreshCw, LogOut } from 'lucide-react-native';
+import { CalendarRange, ChevronLeft, ChevronRight, FileDown } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopRightRefresh } from '@/components/top-right-refresh';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/stores/authStore';
@@ -214,7 +215,7 @@ function buildDtrHtml(args: {
 
 export default function DtrScreen() {
   const theme = useTheme();
-  const { intern: authIntern, isAuthenticated, hasHydrated, logout } = useAuth();
+  const { intern: authIntern, isAuthenticated, hasHydrated } = useAuth();
   const [intern, setIntern] = useState<InternProfile | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -311,11 +312,6 @@ export default function DtrScreen() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/');
-  };
-
   if (!hasHydrated || !isAuthenticated || !authIntern) {
     return <ThemedView style={styles.container} />;
   }
@@ -326,12 +322,13 @@ export default function DtrScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerText}>
             <ThemedText type="title">DTR</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
               Daily Time Record — {monthLabel}
             </ThemedText>
           </View>
+          <TopRightRefresh onPress={fetchData} loading={loading} />
         </View>
 
         <View style={styles.monthNav}>
@@ -357,23 +354,16 @@ export default function DtrScreen() {
           </Pressable>
         </View>
 
-        {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color={theme.primary} />
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.error}>{error}</ThemedText>
-            <Pressable
-              onPress={fetchData}
-              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <RefreshCw color={theme.primary} size={20} />
-              <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-                Retry
-              </ThemedText>
-            </Pressable>
-          </View>
-        ) : rows.length === 0 ? (
+          {loading ? (
+            <View style={styles.loading}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.error}>{error}</ThemedText>
+              <TopRightRefresh onPress={fetchData} />
+            </View>
+          ) : rows.length === 0 ? (
           <View style={styles.empty}>
             <ThemedText themeColor="textSecondary" style={styles.emptyText}>
               No attendance records for {monthLabel}.
@@ -423,26 +413,6 @@ export default function DtrScreen() {
               {printing ? 'Generating PDF…' : 'Print / Export PDF'}
             </ThemedText>
           </Pressable>
-
-          <View style={styles.footerRow}>
-            <Pressable
-              onPress={fetchData}
-              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <RefreshCw color={theme.primary} size={20} />
-              <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-                Refresh
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              onPress={handleLogout}
-              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <LogOut color={theme.primary} size={20} />
-              <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-                Logout
-              </ThemedText>
-            </Pressable>
-          </View>
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -452,7 +422,14 @@ export default function DtrScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: 24 },
-  header: { marginBottom: 16 },
+  header: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  headerText: { flex: 1 },
   subtitle: { marginTop: 4 },
   monthNav: {
     flexDirection: 'row',
@@ -534,7 +511,6 @@ const styles = StyleSheet.create({
   },
   dateCell: { flex: 1.4, textAlign: 'left' },
   footer: { marginTop: Spacing.three, gap: Spacing.two },
-  footerRow: { flexDirection: 'row', gap: Spacing.two },
   printButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -544,13 +520,4 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   printText: { fontSize: 15, fontWeight: '600' },
-  iconButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 12,
-  },
 });

@@ -1,4 +1,4 @@
-import { BarChart3, CalendarRange, Clock, ScanLine } from 'lucide-react-native';
+import { BarChart3, CalendarRange, Clock, ScanLine, UserRound } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -52,6 +52,13 @@ export default function AppTabs() {
         options={{
           title: 'Report',
           tabBarIcon: ({ color }) => <BarChart3 color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <UserRound color={color} size={22} />,
         }}
       />
     </Tabs>

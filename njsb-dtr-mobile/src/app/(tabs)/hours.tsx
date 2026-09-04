@@ -7,10 +7,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Clock, Calendar as CalendarIcon, RefreshCw, LogOut } from 'lucide-react-native';
+import { Clock, Calendar as CalendarIcon } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopRightRefresh } from '@/components/top-right-refresh';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/stores/authStore';
@@ -64,7 +65,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function HoursScreen() {
   const theme = useTheme();
-  const { intern: authIntern, isAuthenticated, hasHydrated, logout } = useAuth();
+  const { intern: authIntern, isAuthenticated, hasHydrated } = useAuth();
   const [intern, setIntern] = useState<InternProfile | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,8 +113,9 @@ function HoursScreen() {
   const handleRefresh = () => {
     if (!authIntern) return;
 
-    setRecords([]);
+    setLoading(true);
     setError(null);
+    setRecords([]);
 
     Promise.all([
       getInternById(authIntern.id),
@@ -125,12 +127,10 @@ function HoursScreen() {
       })
       .catch((e) => {
         setError((e as Error).message);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.replace('/');
   };
 
   if (!hasHydrated || !isAuthenticated || !authIntern) {
@@ -146,10 +146,13 @@ function HoursScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <ThemedText type="title">My Hours</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Track your accumulated and remaining hours
-          </ThemedText>
+          <View style={styles.headerText}>
+            <ThemedText type="title">My Hours</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              Track your accumulated and remaining hours
+            </ThemedText>
+          </View>
+          <TopRightRefresh onPress={handleRefresh} loading={loading} />
         </View>
 
         {loading ? (
@@ -159,12 +162,7 @@ function HoursScreen() {
         ) : error ? (
           <View style={styles.errorContainer}>
             <ThemedText style={styles.error}>{error}</ThemedText>
-            <Pressable onPress={handleRefresh} style={[styles.iconButton, { backgroundColor: theme.card }]}>
-              <RefreshCw color={theme.primary} size={20} />
-              <ThemedText type="small" style={{ color: theme.primary, marginLeft: 4 }}>
-                Retry
-              </ThemedText>
-            </Pressable>
+            <TopRightRefresh onPress={handleRefresh} />
           </View>
         ) : intern ? (
           <>
@@ -248,26 +246,6 @@ function HoursScreen() {
             No intern data available.
           </ThemedText>
         )}
-
-        <View style={styles.footer}>
-          <Pressable
-            onPress={handleRefresh}
-            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <RefreshCw color={theme.primary} size={20} />
-            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-              Refresh
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            onPress={handleLogout}
-            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <LogOut color={theme.primary} size={20} />
-            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-              Logout
-            </ThemedText>
-          </Pressable>
-        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -278,7 +256,14 @@ export default HoursScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: 24 },
-  header: { marginBottom: 24 },
+  header: {
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  headerText: { flex: 1 },
   subtitle: { marginTop: 4 },
   loading: {
     flex: 1,
@@ -354,18 +339,4 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   empty: { textAlign: 'center', marginTop: 32 },
-  footer: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    marginTop: Spacing.four,
-  },
-  iconButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 12,
-  },
 });

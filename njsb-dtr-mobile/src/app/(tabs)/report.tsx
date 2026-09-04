@@ -8,10 +8,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Download, FileText, RefreshCw, LogOut } from 'lucide-react-native';
+import { Download, FileText } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopRightRefresh } from '@/components/top-right-refresh';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/stores/authStore';
@@ -36,7 +37,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default function ReportScreen() {
   const theme = useTheme();
-  const { isAuthenticated, hasHydrated, logout } = useAuth();
+  const { isAuthenticated, hasHydrated } = useAuth();
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,11 +98,6 @@ export default function ReportScreen() {
     );
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/');
-  };
-
   if (!hasHydrated || !isAuthenticated) {
     return <ThemedView style={styles.container} />;
   }
@@ -110,10 +106,13 @@ export default function ReportScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <ThemedText type="title">Report</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Review and download your attendance reports.
-          </ThemedText>
+          <View style={styles.headerText}>
+            <ThemedText type="title">Report</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              Review and download your attendance reports.
+            </ThemedText>
+          </View>
+          <TopRightRefresh onPress={handleRefresh} loading={loading} />
         </View>
 
         {loading ? (
@@ -123,14 +122,7 @@ export default function ReportScreen() {
         ) : error ? (
           <View style={styles.errorContainer}>
             <ThemedText style={styles.error}>{error}</ThemedText>
-            <Pressable
-              onPress={handleRefresh}
-              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <RefreshCw color={theme.primary} size={20} />
-              <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-                Retry
-              </ThemedText>
-            </Pressable>
+            <TopRightRefresh onPress={handleRefresh} />
           </View>
         ) : reports.length === 0 ? (
           <View style={styles.empty}>
@@ -180,26 +172,6 @@ export default function ReportScreen() {
             })}
           </View>
         )}
-
-        <View style={styles.footer}>
-          <Pressable
-            onPress={handleRefresh}
-            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <RefreshCw color={theme.primary} size={20} />
-            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-              Refresh
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            onPress={handleLogout}
-            style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <LogOut color={theme.primary} size={20} />
-            <ThemedText type="small" style={{ color: theme.text, marginLeft: 4 }}>
-              Logout
-            </ThemedText>
-          </Pressable>
-        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -208,7 +180,14 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: 24 },
-  header: { marginBottom: 24 },
+  header: {
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  headerText: { flex: 1 },
   subtitle: { marginTop: 4 },
   loading: {
     flex: 1,
@@ -270,19 +249,5 @@ const styles = StyleSheet.create({
   downloadText: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    marginTop: Spacing.four,
-  },
-  iconButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 12,
   },
 });
