@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 import { useHolidays } from '@/lib/hooks/useSupabaseData';
 
@@ -64,55 +65,63 @@ function Schedule() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      <div className="flex items-center justify-center py-12" aria-live="polite">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading calendar...</span>
       </div>
     );
   }
 
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Schedule</h2>
-          <p className="text-sm text-slate-500">Holiday calendar and scheduled events</p>
+      <header className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Schedule</h1>
+            <p className="text-sm text-muted-foreground">Holiday calendar and scheduled events</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={goToday}>
+            Today
+          </Button>
         </div>
-        <button
-          onClick={goToday}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-800 hover:text-red-800"
-        >
-          Today
-        </button>
-      </div>
+      </header>
 
       {error && (
-        <p className="mb-4 text-sm text-destructive">Failed to load holidays: {error.message}</p>
+        <p className="mb-4 text-sm text-destructive" role="alert">Failed to load holidays: {error.message}</p>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-2 py-3">
-          <button
+      <section aria-labelledby="calendar-heading" className="rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={prevMonth}
-            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Previous month"
+            className="text-muted-foreground hover:text-foreground"
           >
-            ‹
-          </button>
-          <h3 className="text-lg font-semibold text-slate-900">{monthLabel}</h3>
-          <button
+            <span aria-hidden="true">‹</span>
+            <span className="sr-only">Previous month</span>
+          </Button>
+          <h2 id="calendar-heading" className="text-lg font-semibold text-foreground">{monthLabel}</h2>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={nextMonth}
-            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Next month"
+            className="text-muted-foreground hover:text-foreground"
           >
-            ›
-          </button>
+            <span aria-hidden="true">›</span>
+            <span className="sr-only">Next month</span>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 pt-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div className="grid grid-cols-7 gap-1.5 pt-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground" role="row">
           {weekdayLabels.map((label) => (
-            <div key={label}>{label}</div>
+            <div key={label} role="columnheader">{label}</div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 pt-1">
+        <div className="grid grid-cols-7 gap-1.5 pt-1 pb-4" role="grid">
           {matrix.map((week, wi) =>
             week.map((day, di) => {
               const inCurrentMonth = day.getMonth() === viewDate.getMonth();
@@ -125,39 +134,44 @@ function Schedule() {
               const holidayName = holidays[dateKey];
 
               return (
-                <div
+                <button
                   key={`${wi}-${di}`}
+                  type="button"
                   className={[
-                    'relative h-11 rounded-lg border border-transparent p-1 transition-colors',
-                    inCurrentMonth ? 'text-slate-700' : 'text-slate-300',
-                    isToday && inCurrentMonth ? 'border-red-400 bg-red-50/30' : '',
+                    'relative h-11 w-full rounded-lg border p-1 transition-colors text-left',
+                    inCurrentMonth ? 'text-foreground bg-card' : 'text-muted-foreground/50 bg-muted/50',
+                    isToday && inCurrentMonth ? 'border-primary bg-primary/10' : 'border-transparent',
+                    holidayName ? 'relative' : '',
                   ].join(' ')}
+                  aria-label={holidayName ? `${day.getDate()} ${monthLabel}, ${holidayName}` : `${day.getDate()} ${monthLabel}`}
+                  aria-selected={isToday && inCurrentMonth}
                 >
                   <span className="absolute top-1 left-1 text-sm">{day.getDate()}</span>
                   {holidayName && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-full">
-                      <div className="h-1 w-5 rounded-full bg-red-500 mx-auto" title={holidayName} />
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full">
+                      <div className="h-1 w-5 rounded-full bg-destructive mx-auto" title={holidayName} aria-hidden="true" />
                     </div>
                   )}
-                </div>
+                </button>
               );
             })
           )}
         </div>
 
         {Object.keys(holidays).length > 0 && (
-          <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-3 text-sm">
+          <div className="mt-4 space-y-1.5 border-t border-border pt-3 text-sm" aria-labelledby="holidays-heading">
+            <h3 id="holidays-heading" className="sr-only">Holidays this month</h3>
             {Object.entries(holidays)
               .sort(([a], [b]) => (a < b ? -1 : 1))
               .map(([date, name]) => (
-                <div key={date} className="flex items-center justify-between rounded-md px-2 py-1 text-sm hover:bg-slate-50">
-                  <span className="font-medium">{date}</span>
-                  <span className="text-slate-500">{name}</span>
+                <div key={date} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent">
+                  <time dateTime={date} className="font-medium text-foreground">{date}</time>
+                  <span className="text-muted-foreground">{name}</span>
                 </div>
               ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
