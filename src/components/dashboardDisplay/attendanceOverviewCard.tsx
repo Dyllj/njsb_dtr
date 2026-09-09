@@ -44,12 +44,13 @@ type AttendanceOverviewCardProps = {
 function AttendanceOverviewCard({ rows, loading, error }: AttendanceOverviewCardProps) {
   if (loading) {
     return (
-      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+      <Card className="rounded-2xl border border-border bg-card shadow-sm">
         <CardHeader>
           <CardTitle>Today's Attendance Overview</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="animate-spin size-6 text-muted-foreground" />
+          <Loader2 className="animate-spin size-6 text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Loading attendance data...</span>
         </CardContent>
       </Card>
     );
@@ -57,57 +58,59 @@ function AttendanceOverviewCard({ rows, loading, error }: AttendanceOverviewCard
 
   if (error) {
     return (
-      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+      <Card className="rounded-2xl border border-border bg-card shadow-sm">
         <CardHeader>
           <CardTitle>Today's Attendance Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Failed to load: {error.message}</p>
+          <p className="text-sm text-destructive" role="alert">Failed to load: {error.message}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+    <Card className="rounded-2xl border border-border bg-card shadow-sm">
       <CardHeader>
         <CardTitle>Today's Attendance Overview</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Intern</TableHead>
-              <TableHead>Session</TableHead>
-              <TableHead>Time In</TableHead>
-              <TableHead>Time Out</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!rows || rows.length === 0 ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No attendance records for today.
-                </TableCell>
+                <TableHead scope="col">Intern</TableHead>
+                <TableHead scope="col">Session</TableHead>
+                <TableHead scope="col">Time In</TableHead>
+                <TableHead scope="col">Time Out</TableHead>
+                <TableHead scope="col">Status</TableHead>
               </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={`${row.intern}-${row.session}`}>
-                  <TableCell className="font-medium">{row.intern}</TableCell>
-                  <TableCell>{row.session}</TableCell>
-                  <TableCell>{row.timeIn}</TableCell>
-                  <TableCell>{row.timeOut}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusStyles[row.status]}>
-                      {row.status}
-                    </Badge>
+            </TableHeader>
+            <TableBody>
+              {!rows || rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    No attendance records for today.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                rows.map((row) => (
+                  <TableRow key={`${row.intern}-${row.session}`}>
+                    <TableCell className="font-medium">{row.intern}</TableCell>
+                    <TableCell>{row.session}</TableCell>
+                    <TableCell>{row.timeIn}</TableCell>
+                    <TableCell>{row.timeOut}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusStyles[row.status]}>
+                        {row.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
       <CardFooter>
         <Link

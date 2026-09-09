@@ -62,20 +62,19 @@ type StatCardsProps = {
 
 function StatCards({ items = defaultItems }: StatCardsProps) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <section aria-labelledby="stats-heading" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <h2 id="stats-heading" className="sr-only">Key Statistics</h2>
       {items.map((item) => {
         const Icon = item.icon;
         return (
-          <Card key={item.label} className="gap-3 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] py-4 shadow-[0_10px_22px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.85)]">
-            <CardHeader className="flex flex-row items-center justify-between px-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {item.label}
-              </CardTitle>
-              <Icon className={`size-5 ${item.iconClass ?? 'text-muted-foreground'}`} />
-            </CardHeader>
-            <CardContent className="px-4">
+          <article key={item.label} className="rounded-2xl border border-border bg-card shadow-sm p-4 transition-shadow hover:shadow-md">
+            <header className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">{item.label}</h3>
+              <Icon className={`size-5 ${item.iconClass ?? 'text-muted-foreground'}`} aria-hidden="true" />
+            </header>
+            <div className="mt-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{item.value}</span>
+                <span className="text-3xl font-bold text-foreground">{item.value}</span>
                 {item.subtext && (
                   <span className="text-sm text-muted-foreground">{item.subtext}</span>
                 )}
@@ -86,8 +85,8 @@ function StatCards({ items = defaultItems }: StatCardsProps) {
               >
                 {item.actionLabel} &rarr;
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+          </article>
         );
       })}
     </section>

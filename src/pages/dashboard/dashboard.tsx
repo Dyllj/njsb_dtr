@@ -15,15 +15,16 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <section className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      <section className="flex items-center justify-center py-12" aria-live="polite">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading dashboard...</span>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="flex flex-col items-center justify-center gap-4 py-12">
+      <section className="flex flex-col items-center justify-center gap-4 py-12" role="alert">
         <p className="text-sm text-destructive">Failed to load dashboard data: {error.message}</p>
         <button
           onClick={refetch}
@@ -83,11 +84,20 @@ function Dashboard() {
     : [];
 
   return (
-    <div className="flex flex-col gap-4 pt-5">
-      <StatCards items={statItems} />
+    <div className="flex flex-col gap-6 pt-4">
+      <header className="pb-4 border-b border-border">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">Overview of intern attendance and activity</p>
+      </header>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="flex flex-col gap-4 lg:col-span-2">
+      <section aria-labelledby="stats-heading" className="space-y-4">
+        <h2 id="stats-heading" className="sr-only">Key Statistics</h2>
+        <StatCards items={statItems} />
+      </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <section className="lg:col-span-7 space-y-6" aria-labelledby="main-content-heading">
+          <h2 id="main-content-heading" className="sr-only">Main Dashboard Content</h2>
           <WeeklyAttendanceCard
             rows={data?.weeklyRows}
             loading={loading}
@@ -99,8 +109,10 @@ function Dashboard() {
             loading={loading}
             error={error}
           />
-        </div>
-        <div className="flex flex-col gap-4 lg:col-span-1">
+        </section>
+
+        <aside className="lg:col-span-5 space-y-6" aria-labelledby="sidebar-content-heading">
+          <h2 id="sidebar-content-heading" className="sr-only">Summary & Activity</h2>
           <AttendanceSummaryCard
             slices={data?.summarySlices}
             loading={loading}
@@ -111,7 +123,7 @@ function Dashboard() {
             loading={loading}
             error={error}
           />
-        </div>
+        </aside>
       </div>
     </div>
   );

@@ -39,8 +39,9 @@ function ScanPage() {
 
   if (qrLoadingOrMissing) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin size-8 text-muted-foreground" />
+      <div className="flex items-center justify-center py-12" aria-live="polite">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Verifying QR code...</span>
       </div>
     );
   }
@@ -48,10 +49,10 @@ function ScanPage() {
   if (!qrCode || !qrCode.isActive) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-md w-full mx-4">
           <CardContent className="py-8">
             <div className="flex flex-col items-center gap-3 text-center">
-              <XCircle className="size-12 text-red-600" />
+              <XCircle className="size-12 text-red-600" aria-hidden="true" />
               <h2 className="text-lg font-semibold">QR Code Expired</h2>
               <p className="text-sm text-muted-foreground">
                 This QR code is no longer valid. Please ask your administrator for the current QR code.
@@ -120,7 +121,7 @@ function ScanPage() {
   };
 
   return (
-    <div className="flex items-center justify-center py-12">
+    <main className="flex min-h-screen items-center justify-center py-12 px-4" role="main">
       <Card className="max-w-md w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -130,15 +131,15 @@ function ScanPage() {
         </CardHeader>
         <CardContent>
           {result === 'success' ? (
-            <div className="flex flex-col items-center gap-3 text-center py-4">
-              <CheckCircle2 className="size-12 text-green-600" />
+            <section className="flex flex-col items-center gap-3 text-center py-4" aria-live="polite">
+              <CheckCircle2 className="size-12 text-green-600" aria-hidden="true" />
               <h3 className="text-base font-semibold">Check-in Successful</h3>
               <p className="text-sm text-muted-foreground">{message}</p>
-            </div>
+            </section>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="flex flex-col items-center gap-3 text-center">
-                <QrCode className="size-10 text-red-800" />
+                <QrCode className="size-10 text-red-800" aria-hidden="true" />
                 <p className="text-sm text-muted-foreground">
                   Scan verified. Enter your Intern ID below to record your attendance for today.
                 </p>
@@ -153,7 +154,7 @@ function ScanPage() {
                   onValueChange={(v) => setSession(v as AttendanceSession)}
                   disabled={submitting}
                 >
-                  <SelectTrigger id="session" size="sm" className="w-full">
+                  <SelectTrigger id="session" size="sm" className="w-full" aria-label="Select session">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -174,17 +175,20 @@ function ScanPage() {
                   placeholder="e.g. I-001"
                   disabled={submitting}
                   autoFocus
+                  autoComplete="off"
+                  aria-describedby="intern-id-hint"
                 />
+                <span id="intern-id-hint" className="sr-only">Enter your intern ID (e.g., I-001)</span>
               </div>
 
               {result === 'error' && (
-                <p className="text-sm text-destructive">{message}</p>
+                <p className="text-sm text-destructive" role="alert">{message}</p>
               )}
 
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
                     Recording...
                   </>
                 ) : (
@@ -195,7 +199,7 @@ function ScanPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
 

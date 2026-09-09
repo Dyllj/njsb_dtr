@@ -26,10 +26,14 @@ function App() {
   }
 
   return (
-    <>
-      <Header onLogout={logout} />
-      <Sidebar />
-      <main className="ml-52 pt-16 p-4 flex flex-col gap-4">
+    <div className="min-h-screen bg-background">
+      <header className="fixed left-0 top-0 right-0 z-30 h-16" role="banner">
+        <Header onLogout={logout} />
+      </header>
+      <nav className="fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-52" role="navigation" aria-label="Main navigation">
+        <Sidebar />
+      </nav>
+      <main id="main-content" className="ml-52 pt-16 min-h-[calc(100vh-4rem)] p-4 flex flex-col gap-4" role="main">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/interns" element={<Interns />} />
@@ -41,7 +45,7 @@ function App() {
           <Route path="/scan/:code" element={<ScanPage />} />
         </Routes>
       </main>
-    </>
+    </div>
   );
 }
 

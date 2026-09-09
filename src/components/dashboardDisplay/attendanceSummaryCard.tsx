@@ -34,12 +34,13 @@ function AttendanceSummaryCard({ slices = defaultSlices, loading, error }: Atten
 
   if (loading) {
     return (
-      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+      <Card className="rounded-2xl border border-border bg-card shadow-sm">
         <CardHeader>
           <CardTitle>Attendance Summary</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="animate-spin size-6 text-muted-foreground" />
+          <Loader2 className="animate-spin size-6 text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Loading attendance summary...</span>
         </CardContent>
       </Card>
     );
@@ -47,22 +48,22 @@ function AttendanceSummaryCard({ slices = defaultSlices, loading, error }: Atten
 
   if (error) {
     return (
-      <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+      <Card className="rounded-2xl border border-border bg-card shadow-sm">
         <CardHeader>
           <CardTitle>Attendance Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Failed to load: {error.message}</p>
+          <p className="text-sm text-destructive" role="alert">Failed to load: {error.message}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="gap-4 rounded-2xl border border-[#e7ebf2] bg-[#f9f9f8] shadow-[0_12px_28px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]">
+    <Card className="rounded-2xl border border-border bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Attendance Summary</CardTitle>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={period} onValueChange={setPeriod} aria-label="Select time period">
           <SelectTrigger size="sm" className="w-28">
             <SelectValue />
           </SelectTrigger>
@@ -74,7 +75,7 @@ function AttendanceSummaryCard({ slices = defaultSlices, loading, error }: Atten
         </Select>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4">
-        <div className="h-48 w-full">
+        <div className="h-48 w-full" role="img" aria-label={`Attendance summary pie chart showing ${slices.map(s => `${s.label} ${s.value}`).join(', ')}`}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -93,13 +94,14 @@ function AttendanceSummaryCard({ slices = defaultSlices, loading, error }: Atten
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <ul className="w-full space-y-2">
+        <ul className="w-full space-y-2" aria-label="Attendance summary details">
           {slices.map((slice) => (
             <li key={slice.label} className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <span
                   className="size-2.5 rounded-full"
                   style={{ backgroundColor: slice.color }}
+                  aria-hidden="true"
                 />
                 {slice.label}
               </span>
