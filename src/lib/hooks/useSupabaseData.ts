@@ -412,7 +412,7 @@ export function useDashboardData() {
 
       const percentage =
         stats.presentToday > 0
-          ? `${((stats.presentToday / (stats.presentToday + stats.absentToday)) * 100).toFixed(1)}%`
+          ? `${((stats.presentToday / (stats.presentToday +         stats.absent)) * 100).toFixed(1)}%`
           : '0.0%';
 
       setData({
@@ -457,7 +457,7 @@ export function useDashboardData() {
         if (!cancelled) {
           const percentage =
             stats.presentToday > 0
-              ? `${((stats.presentToday / (stats.presentToday + stats.absentToday)) * 100).toFixed(1)}%`
+              ? `${((stats.presentToday / (stats.presentToday +         stats.absent)) * 100).toFixed(1)}%`
               : '0.0%';
 
           setData({

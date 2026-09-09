@@ -43,9 +43,9 @@ export async function getAttendanceOverview(date: string): Promise<AttendanceSum
 
   if (error) throw error;
 
-  const present = data.filter((r: AttendanceRow) => r.status === 'PRESENT').length;
-  const absent = data.filter((r: AttendanceRow) => r.status === 'ABSENT').length;
-  const late = data.filter((r: AttendanceRow) => r.status === 'LATE').length;
+  const present = data.filter((r) => r.status === 'PRESENT').length;
+  const absent = data.filter((r) => r.status === 'ABSENT').length;
+  const late = data.filter((r) => r.status === 'LATE').length;
   const total = data.length;
 
   return { present, absent, late, total };

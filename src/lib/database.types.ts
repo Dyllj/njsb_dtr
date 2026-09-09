@@ -28,6 +28,7 @@ export interface Database {
           status?: 'Active' | 'Inactive';
           created_at?: string | null;
         };
+        Relationships: [];
       };
       interns: {
         Row: {
@@ -66,6 +67,7 @@ export interface Database {
           password?: string | null;
           created_at?: string | null;
         };
+        Relationships: [];
       };
       attendance: {
         Row: {
@@ -101,6 +103,7 @@ export interface Database {
           notes?: string | null;
           created_at?: string | null;
         };
+        Relationships: [];
       };
       reports: {
         Row: {
@@ -127,6 +130,7 @@ export interface Database {
           owner?: string;
           created_at?: string | null;
         };
+        Relationships: [];
       };
       holidays: {
         Row: {
@@ -147,6 +151,7 @@ export interface Database {
           name?: string;
           created_at?: string | null;
         };
+        Relationships: [];
       };
       qr_codes: {
         Row: {
@@ -167,7 +172,10 @@ export interface Database {
           is_active?: boolean;
           created_at?: string | null;
         };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
   };
 }

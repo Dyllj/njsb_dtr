@@ -86,7 +86,6 @@ function ScanPage() {
     setSubmitting(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const supabase = (await import('@/lib/supabase')).supabase;
 
       // Find the existing row for this (intern, date, session) to decide
       // whether to time-in or time-out.

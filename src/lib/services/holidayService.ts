@@ -24,7 +24,7 @@ export async function getHolidays(): Promise<Holiday[]> {
 export async function upsertHoliday(date: string, name: string): Promise<Holiday> {
   const { data, error } = await supabase
     .from('holidays')
-    .upsert({ date, name }, { on: 'date' })
+    .upsert({ date, name }, { onConflict: 'date' })
     .select()
     .single();
 
