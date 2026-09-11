@@ -100,7 +100,7 @@ function GenerateReport() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row sm:items-end gap-4" noValidate>
-        <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
+        <div className="flex flex-col gap-1 flex-1 min-w-48">
           <label htmlFor="report-title" className="text-xs font-medium text-muted-foreground">
             Title
           </label>
@@ -117,7 +117,7 @@ function GenerateReport() {
           />
         </div>
 
-        <div className="flex flex-col gap-1 min-w-[10rem]">
+        <div className="flex flex-col gap-1 min-w-40">
           <label htmlFor="report-type" className="text-xs font-medium text-muted-foreground">
             Type
           </label>
@@ -138,7 +138,7 @@ function GenerateReport() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1 min-w-[10rem]">
+        <div className="flex flex-col gap-1 min-w-40">
           <label htmlFor="report-date" className="text-xs font-medium text-muted-foreground">
             Date
           </label>
@@ -154,7 +154,7 @@ function GenerateReport() {
           />
         </div>
 
-        <div className="flex flex-col gap-1 flex-1 min-w-[10rem]">
+        <div className="flex flex-col gap-1 flex-1 min-w-40">
           <label htmlFor="report-owner" className="text-xs font-medium text-muted-foreground">
             Owner
           </label>

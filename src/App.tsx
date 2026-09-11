@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 import Header from './components/header/header';
@@ -19,9 +19,16 @@ function App() {
   const location = useLocation();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  useEffect(() => {
+  // Reset the mobile drawer whenever the route changes. Doing this during
+  // render (rather than in a useEffect) avoids the extra render pass that
+  // react-hooks/set-state-in-effect warns about — this is the pattern React
+  // itself recommends for "reset state when X changes":
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
     setIsMobileNavOpen(false);
-  }, [location.pathname]);
+  }
 
   if (loading) {
     return null;
