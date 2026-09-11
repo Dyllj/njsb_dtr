@@ -66,7 +66,7 @@ export default function Attendance() {
   const [viewDate, setViewDate] = useState<Date>(startOfMonth(today));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
-
+  const { holidays } = useHolidays();
   const { data: attendanceData, loading, error } = useMonthlyAttendance(
     viewDate.getFullYear(),
     viewDate.getMonth()
@@ -88,7 +88,7 @@ export default function Attendance() {
     setSelectedDate(today);
   }
 
-  function getAttendance(date: Date): AttendanceSummary | null {
+function getAttendance(date: Date): AttendanceSummary | null {
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const isFuture = date > today;
@@ -96,6 +96,11 @@ export default function Attendance() {
 
     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return attendanceData[dateKey] ?? null;
+  }
+
+  function isHoliday(date: Date): boolean {
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return Boolean(holidays[dateKey]);
   }
 
   if (loading) {
@@ -183,6 +188,7 @@ export default function Attendance() {
               const isSelected = selectedDate !== null && sameDay(day, selectedDate);
               const isHovered = hoveredDate !== null && sameDay(day, hoveredDate);
               const attendance = getAttendance(day);
+              const holiday = isHoliday(day);
               const isWeekendCol = di === 0 || di === 6;
               const showAbove = wi >= matrix.length - 2;
 
@@ -197,6 +203,7 @@ export default function Attendance() {
                       'flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-lg text-sm transition-colors',
                       inCurrentMonth ? 'text-foreground' : 'text-muted-foreground',
                       isWeekendCol && inCurrentMonth && !isSelected ? 'bg-muted/50' : '',
+                      holiday ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : '',
                       isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-accent',
                       isToday && !isSelected ? 'ring-1 ring-inset ring-primary' : '',
                     ].join(' ')}
@@ -206,7 +213,13 @@ export default function Attendance() {
                     <span className={`font-medium ${isToday && !isSelected ? 'text-primary' : ''}`}>
                       {day.getDate()}
                     </span>
-                    {attendance && (
+                    {holiday && (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full bg-rose-500"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {attendance && !holiday && (
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
                           isSelected
@@ -220,7 +233,7 @@ export default function Attendance() {
                     )}
                   </button>
 
-                  {isHovered && attendance && (
+                  {isHovered && (attendance || holiday) && (
                     <div
                       className={[
                         'pointer-events-none absolute z-20 w-40 rounded-lg border border-border bg-card p-3 shadow-lg',
@@ -232,23 +245,33 @@ export default function Attendance() {
                       <p className="mb-2 text-xs font-semibold text-muted-foreground">
                         {day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-                          Present
-                        </span>
-                        <span className="font-semibold text-foreground">{attendance.present}</span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                      {holiday && (
+                        <div className="mb-2 flex items-center gap-1.5 text-sm">
                           <span className="h-2 w-2 rounded-full bg-rose-500" aria-hidden="true" />
-                          Absent
-                        </span>
-                        <span className="font-semibold text-foreground">{attendance.absent}</span>
-                      </div>
+                          <span className="font-semibold text-foreground">Holiday</span>
+                        </div>
+                      )}
+                      {attendance && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                              Present
+                            </span>
+                            <span className="font-semibold text-foreground">{attendance.present}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <span className="h-2 w-2 rounded-full bg-rose-500" aria-hidden="true" />
+                              Absent
+                            </span>
+                            <span className="font-semibold text-foreground">{attendance.absent}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-                  {isHovered && !attendance && (
+                  {isHovered && !attendance && !holiday && (
                     <div
                       className={[
                         'pointer-events-none absolute z-20 w-36 rounded-lg border border-border bg-card p-3 text-center text-xs text-muted-foreground shadow-lg',
@@ -267,6 +290,10 @@ export default function Attendance() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-border px-5 py-3 text-xs text-muted-foreground" aria-label="Legend">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-rose-500" aria-hidden="true" />
+            Holiday
+          </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
             Low absences
