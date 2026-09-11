@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, Settings, User, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-function Header({ onLogout }: { onLogout?: () => void }) {
+type HeaderProps = {
+  onLogout?: () => void;
+  onMenuToggle?: () => void;
+  isMobileNavOpen?: boolean;
+};
+
+function Header({ onLogout, onMenuToggle, isMobileNavOpen }: HeaderProps) {
   return (
     <header className="h-16 bg-white p-4 shadow-sm">
-      <div className="flex h-full items-center justify-between gap-7">
-        <div className="flex items-center gap-7">
-          <h1 className="text-2xl font-bold">NJSB DTR</h1>
-          <h2 className="text-lg font-semibold text-muted-foreground hidden sm:block">
+      <div className="flex h-full items-center justify-between gap-3 sm:gap-7">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={onMenuToggle}
+            aria-label={isMobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={isMobileNavOpen}
+          >
+            {isMobileNavOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
+          </Button>
+          <p className="truncate text-xl font-bold sm:text-2xl">NJSB DTR</p>
+          <p className="hidden text-base font-semibold text-muted-foreground sm:block">
             Daily Time Report
-          </h2>
+          </p>
         </div>
 
         <DropdownMenu>
@@ -33,7 +49,7 @@ function Header({ onLogout }: { onLogout?: () => void }) {
                   AU
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden md:inline">Admin User</span>
+              <span className="hidden text-sm font-medium md:inline">Admin User</span>
               <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>

@@ -78,25 +78,29 @@ function GenerateReport() {
 
   if (loading) {
     return (
-      <section className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin size-8 text-muted-foreground" />
-      </section>
+      <div className="flex items-center justify-center py-12" aria-live="polite">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading reports...</span>
+      </div>
     );
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Reports</h3>
-        <Badge variant="secondary">{reports.length} files</Badge>
-      </div>
+    <section aria-labelledby="reports-settings-heading" className="flex flex-col gap-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h2 id="reports-settings-heading" className="text-base font-semibold text-foreground">Reports</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Create and manage attendance reports</p>
+        </div>
+        <Badge variant="secondary" className="shrink-0">{reports.length} files</Badge>
+      </header>
 
       {error && (
-        <p className="text-sm text-destructive">Failed to load reports: {error.message}</p>
+        <p className="text-sm text-destructive" role="alert">Failed to load reports: {error.message}</p>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row sm:items-end gap-4" noValidate>
+        <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
           <label htmlFor="report-title" className="text-xs font-medium text-muted-foreground">
             Title
           </label>
@@ -107,13 +111,16 @@ function GenerateReport() {
               setForm((current) => ({ ...current, title: event.target.value }))
             }
             placeholder="August Attendance"
-            className="w-48"
+            className="w-full"
             disabled={submitting}
+            required
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Type</label>
+        <div className="flex flex-col gap-1 min-w-[10rem]">
+          <label htmlFor="report-type" className="text-xs font-medium text-muted-foreground">
+            Type
+          </label>
           <Select
             value={form.type}
             onValueChange={(value) =>
@@ -121,7 +128,7 @@ function GenerateReport() {
             }
             disabled={submitting}
           >
-            <SelectTrigger size="sm" className="w-32">
+            <SelectTrigger id="report-type" size="sm" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -131,7 +138,7 @@ function GenerateReport() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-w-[10rem]">
           <label htmlFor="report-date" className="text-xs font-medium text-muted-foreground">
             Date
           </label>
@@ -142,12 +149,12 @@ function GenerateReport() {
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               setForm((current) => ({ ...current, generatedAt: event.target.value }))
             }
-            className="w-40"
+            className="w-full"
             disabled={submitting}
           />
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[10rem]">
           <label htmlFor="report-owner" className="text-xs font-medium text-muted-foreground">
             Owner
           </label>
@@ -158,38 +165,41 @@ function GenerateReport() {
               setForm((current) => ({ ...current, owner: event.target.value }))
             }
             placeholder="Finance"
-            className="w-36"
+            className="w-full"
             disabled={submitting}
+            required
           />
         </div>
 
-        <Button type="submit" size="sm" disabled={submitting}>
-          <FilePlus2 className="size-4" />
-          {isEditing ? 'Update' : 'Create Report'}
-        </Button>
-
-        {isEditing && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm())} disabled={submitting}>
-            Cancel
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={submitting}>
+            <FilePlus2 className="size-4" aria-hidden="true" />
+            {isEditing ? 'Update' : 'Create Report'}
           </Button>
-        )}
+
+          {isEditing && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm())} disabled={submitting}>
+              Cancel
+            </Button>
+          )}
+        </div>
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Report</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Generated</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead scope="col">Report</TableHead>
+              <TableHead scope="col">Type</TableHead>
+              <TableHead scope="col">Generated</TableHead>
+              <TableHead scope="col">Owner</TableHead>
+              <TableHead scope="col" className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {reports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No reports yet.
                 </TableCell>
               </TableRow>
@@ -203,7 +213,9 @@ function GenerateReport() {
                   <TableCell>
                     <Badge variant="outline">{report.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{report.generatedAt}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <time dateTime={report.generatedAt}>{report.generatedAt}</time>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{report.owner}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
@@ -213,8 +225,9 @@ function GenerateReport() {
                         size="icon"
                         className="size-7"
                         onClick={() => handleEdit(report)}
+                        aria-label={`Edit ${report.title}`}
                       >
-                        <Pencil className="size-3.5" />
+                        <Pencil className="size-3.5" aria-hidden="true" />
                         <span className="sr-only">Edit {report.title}</span>
                       </Button>
                       <Button
@@ -223,8 +236,9 @@ function GenerateReport() {
                         size="icon"
                         className="size-7 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(report.id)}
+                        aria-label={`Delete ${report.title}`}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-3.5" aria-hidden="true" />
                         <span className="sr-only">Delete {report.title}</span>
                       </Button>
                     </div>

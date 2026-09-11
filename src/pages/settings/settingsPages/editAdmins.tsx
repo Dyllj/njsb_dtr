@@ -27,7 +27,7 @@ const emptyForm: AdminRecord = { id: '', name: '', email: '', role: '', status: 
 
 function EditAdmins() {
   const { admins, loading, error, create, update, remove } = useAdmins();
-   const [form, setForm] = useState<AdminRecord>(emptyForm);
+  const [form, setForm] = useState<AdminRecord>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -42,22 +42,22 @@ function EditAdmins() {
 
     if (!name || !email || !role) return;
 
-     setSubmitError(null);
-     setSubmitting(true);
+    setSubmitError(null);
+    setSubmitting(true);
 
-     try {
-       if (isEditing) {
-         await update(form.id, { name, email, role, status: form.status });
-       } else {
-         await create({ name, email, role, status: form.status });
-       }
-       setForm(emptyForm);
-     } catch (e) {
-       setSubmitError((e as Error).message);
-     } finally {
-       setSubmitting(false);
-     }
-   };
+    try {
+      if (isEditing) {
+        await update(form.id, { name, email, role, status: form.status });
+      } else {
+        await create({ name, email, role, status: form.status });
+      }
+      setForm(emptyForm);
+    } catch (e) {
+      setSubmitError((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleEdit = (admin: AdminRecord) => {
     setForm(admin);
@@ -73,25 +73,29 @@ function EditAdmins() {
 
   if (loading) {
     return (
-      <section className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin size-8 text-muted-foreground" />
-      </section>
+      <div className="flex items-center justify-center py-12" aria-live="polite">
+        <Loader2 className="animate-spin size-8 text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading admins...</span>
+      </div>
     );
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Admins</h3>
-        <Badge variant="secondary">{admins.length} users</Badge>
-      </div>
+    <section aria-labelledby="admins-heading" className="flex flex-col gap-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h2 id="admins-heading" className="text-base font-semibold text-foreground">Admins</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Manage administrator accounts and permissions</p>
+        </div>
+        <Badge variant="secondary" className="shrink-0">{admins.length} users</Badge>
+      </header>
 
       {error && (
-        <p className="text-sm text-destructive">Failed to load admins: {error.message}</p>
+        <p className="text-sm text-destructive" role="alert">Failed to load admins: {error.message}</p>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row sm:items-end gap-4" noValidate>
+        <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
           <label htmlFor="admin-name" className="text-xs font-medium text-muted-foreground">
             Name
           </label>
@@ -102,12 +106,13 @@ function EditAdmins() {
               setForm((current) => ({ ...current, name: event.target.value }))
             }
             placeholder="Juan Dela Cruz"
-            className="w-44"
+            className="w-full"
             disabled={submitting}
+            required
           />
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[12rem]">
           <label htmlFor="admin-email" className="text-xs font-medium text-muted-foreground">
             Email
           </label>
@@ -119,12 +124,13 @@ function EditAdmins() {
               setForm((current) => ({ ...current, email: event.target.value }))
             }
             placeholder="name@njsb.com"
-            className="w-52"
+            className="w-full"
             disabled={submitting}
+            required
           />
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 min-w-[10rem]">
           <label htmlFor="admin-role" className="text-xs font-medium text-muted-foreground">
             Role
           </label>
@@ -135,13 +141,16 @@ function EditAdmins() {
               setForm((current) => ({ ...current, role: event.target.value }))
             }
             placeholder="Manager"
-            className="w-36"
+            className="w-full"
             disabled={submitting}
+            required
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Status</label>
+        <div className="flex flex-col gap-1 min-w-[10rem]">
+          <label htmlFor="admin-status" className="text-xs font-medium text-muted-foreground">
+            Status
+          </label>
           <Select
             value={form.status}
             onValueChange={(value) =>
@@ -149,7 +158,7 @@ function EditAdmins() {
             }
             disabled={submitting}
           >
-            <SelectTrigger size="sm" className="w-28">
+            <SelectTrigger id="admin-status" size="sm" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -159,34 +168,36 @@ function EditAdmins() {
           </Select>
         </div>
 
-        <Button type="submit" size="sm" disabled={submitting}>
-          <UserPlus className="size-4" />
-          {isEditing ? 'Update' : 'Add Admin'}
-        </Button>
-
-        {isEditing && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)} disabled={submitting}>
-            Cancel
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={submitting}>
+            <UserPlus className="size-4" aria-hidden="true" />
+            {isEditing ? 'Update' : 'Add Admin'}
           </Button>
-        )}
-        {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+
+          {isEditing && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setForm(emptyForm)} disabled={submitting}>
+              Cancel
+            </Button>
+          )}
+        </div>
+        {submitError && <p className="text-sm text-destructive w-full sm:w-auto" role="alert">{submitError}</p>}
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead scope="col">Name</TableHead>
+              <TableHead scope="col">Email</TableHead>
+              <TableHead scope="col">Role</TableHead>
+              <TableHead scope="col">Status</TableHead>
+              <TableHead scope="col" className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {admins.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No admins yet.
                 </TableCell>
               </TableRow>
@@ -212,8 +223,9 @@ function EditAdmins() {
                         size="icon"
                         className="size-7"
                         onClick={() => handleEdit(admin)}
+                        aria-label={`Edit ${admin.name}`}
                       >
-                        <Pencil className="size-3.5" />
+                        <Pencil className="size-3.5" aria-hidden="true" />
                         <span className="sr-only">Edit {admin.name}</span>
                       </Button>
                       <Button
@@ -222,8 +234,9 @@ function EditAdmins() {
                         size="icon"
                         className="size-7 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(admin.id)}
+                        aria-label={`Delete ${admin.name}`}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-3.5" aria-hidden="true" />
                         <span className="sr-only">Delete {admin.name}</span>
                       </Button>
                     </div>

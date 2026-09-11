@@ -27,7 +27,6 @@ const Nav = ({
           isActive ? 'bg-red-900/60 text-white' : 'text-zinc-300 hover:text-white hover:bg-red-900/20'
         } ${className}`.trim()
       }
-      aria-current={isActive => isActive ? 'page' : undefined}
     >
       {Icon && (
         <Icon className="size-5 text-current transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" />

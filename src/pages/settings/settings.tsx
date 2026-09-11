@@ -46,17 +46,18 @@ function Settings() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pt-5">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+    <div className="flex flex-col gap-6 pt-4">
+      <header className="pb-4 border-b border-border">
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage admin access, intern records, reports, and the attendance calendar.
         </p>
-      </div>
+      </header>
 
       <nav
         aria-label="Settings sections"
-        className="inline-flex w-fit items-center gap-1 rounded-xl border border-border bg-muted p-1"
+        className="flex w-full overflow-x-auto rounded-xl border border-border bg-muted p-1"
+        role="tablist"
       >
         {settingsNav.map((item) => {
           const isActive = item.id === activeTab;
@@ -66,10 +67,13 @@ function Settings() {
             <button
               key={item.id}
               type="button"
-              aria-current={isActive ? 'page' : undefined}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`settings-panel-${item.id}`}
+              id={`settings-tab-${item.id}`}
               onClick={() => handleTabChange(item.id)}
               className={cn(
-                'relative flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
+                'relative flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                 isActive ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -80,7 +84,7 @@ function Settings() {
                   transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
                 />
               )}
-              <Icon className="relative z-10 size-4" />
+              <Icon className="relative z-10 size-4" aria-hidden="true" />
               <span className="relative z-10">{item.label}</span>
             </button>
           );
@@ -88,10 +92,13 @@ function Settings() {
       </nav>
 
       <Card>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
+              id={`settings-panel-${activeTab}`}
+              role="tabpanel"
+              aria-labelledby={`settings-tab-${activeTab}`}
               initial={{ opacity: 0, x: direction > 0 ? 24 : -24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction > 0 ? -24 : 24 }}

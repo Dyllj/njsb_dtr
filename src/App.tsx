@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 import Header from './components/header/header';
 import Sidebar from './components/sidebar/sidebar';
@@ -11,11 +12,16 @@ import QrCodePage from './pages/qrCode/qrCode';
 import ScanPage from './pages/scan/scan';
 import Settings from './pages/settings/settings';
 import AcceptInvite from '@/components/acceptInvite';
-
 import { useAuth } from '@/context/AuthContext';
 
 function App() {
   const { session, loading, login, logout } = useAuth();
+  const location = useLocation();
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [location.pathname]);
 
   if (loading) {
     return null;
@@ -28,12 +34,30 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <header className="fixed left-0 top-0 right-0 z-30 h-16" role="banner">
-        <Header onLogout={logout} />
+        <Header
+          onLogout={logout}
+          onMenuToggle={() => setIsMobileNavOpen((open) => !open)}
+          isMobileNavOpen={isMobileNavOpen}
+        />
       </header>
-      <nav className="fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-52" role="navigation" aria-label="Main navigation">
+      <nav
+        aria-label="Main navigation"
+        className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 bg-white shadow-xl transition-transform duration-200 md:static md:z-auto md:h-[calc(100vh-4rem)] md:w-52 md:shadow-none ${
+          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+        role="navigation"
+      >
         <Sidebar />
       </nav>
-      <main id="main-content" className="ml-52 pt-16 min-h-[calc(100vh-4rem)] p-4 flex flex-col gap-4" role="main">
+      {isMobileNavOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 top-16 z-30 bg-black/40 md:hidden"
+          aria-label="Close navigation"
+          onClick={() => setIsMobileNavOpen(false)}
+        />
+      )}
+      <main id="main-content" className="ml-0 pt-16 min-h-[calc(100vh-4rem)] p-4 sm:p-6 flex flex-col gap-4 md:ml-52" role="main">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/interns" element={<Interns />} />
