@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarCheck2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-import { useMonthlyAttendance } from '@/lib/hooks/useSupabaseData';
+import { useHolidays, useMonthlyAttendance } from '@/lib/hooks/useSupabaseData';
 import type { AttendanceSummary } from '@/lib/services/attendanceService';
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
