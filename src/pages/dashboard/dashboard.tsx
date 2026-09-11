@@ -1,3 +1,4 @@
+// src/pages/dashboard/dashboard.tsx
 import { Loader2 } from 'lucide-react';
 import StatCards from '@/components/dashboardDisplay/statCards';
 import AttendanceOverviewCard from '@/components/dashboardDisplay/attendanceOverviewCard';
@@ -27,6 +28,7 @@ function Dashboard() {
       <section className="flex flex-col items-center justify-center gap-4 py-12" role="alert">
         <p className="text-sm text-destructive">Failed to load dashboard data: {error.message}</p>
         <button
+          type="button"
           onClick={refetch}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-red-800 hover:text-red-800"
         >
@@ -90,10 +92,7 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground mt-1">Overview of intern attendance and activity</p>
       </header>
 
-      <section aria-labelledby="stats-heading" className="space-y-4">
-        <h2 id="stats-heading" className="sr-only">Key Statistics</h2>
-        <StatCards items={statItems} />
-      </section>
+      <StatCards items={statItems} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <section className="lg:col-span-7 space-y-6" aria-labelledby="main-content-heading">

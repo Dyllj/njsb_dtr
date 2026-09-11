@@ -1,3 +1,4 @@
+// src/pages/attendance/attendance.tsx
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CalendarCheck2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -188,6 +189,7 @@ export default function Attendance() {
               return (
                 <div key={`${wi}-${di}`} className="relative">
                   <button
+                    type="button"
                     onClick={() => setSelectedDate(day)}
                     onMouseEnter={() => setHoveredDate(day)}
                     onMouseLeave={() => setHoveredDate(null)}
@@ -200,7 +202,6 @@ export default function Attendance() {
                     ].join(' ')}
                     aria-label={day.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                     aria-selected={isSelected}
-                    aria-pressed={isSelected}
                   >
                     <span className={`font-medium ${isToday && !isSelected ? 'text-primary' : ''}`}>
                       {day.getDate()}
