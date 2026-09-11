@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
@@ -21,9 +22,7 @@ function App() {
 
   // Reset the mobile drawer whenever the route changes. Doing this during
   // render (rather than in a useEffect) avoids the extra render pass that
-  // react-hooks/set-state-in-effect warns about — this is the pattern React
-  // itself recommends for "reset state when X changes":
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  // react-hooks/set-state-in-effect warns about.
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (location.pathname !== prevPathname) {
     setPrevPathname(location.pathname);
@@ -47,15 +46,23 @@ function App() {
           isMobileNavOpen={isMobileNavOpen}
         />
       </header>
+
+      {/*
+        The sidebar stays `fixed` at every breakpoint so it always sits
+        beside `main` (via main's md:ml-52), never in normal document flow.
+        Only translate-x changes between breakpoints: off-screen drawer on
+        mobile, permanently visible on desktop.
+      */}
       <nav
         aria-label="Main navigation"
-        className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 bg-white shadow-xl transition-transform duration-200 md:static md:z-auto md:h-[calc(100vh-4rem)] md:w-52 md:shadow-none ${
-          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 bg-white shadow-xl transition-transform duration-200 md:z-20 md:w-52 md:shadow-none md:translate-x-0 ${
+          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         role="navigation"
       >
         <Sidebar />
       </nav>
+
       {isMobileNavOpen && (
         <button
           type="button"
@@ -64,7 +71,8 @@ function App() {
           onClick={() => setIsMobileNavOpen(false)}
         />
       )}
-      <main id="main-content" className="ml-0 pt-16 min-h-[calc(100vh-4rem)] p-4 sm:p-6 flex flex-col gap-4 md:ml-52" role="main">
+
+      <main id="main-content" className="mt-10 ml-0 pt-16 min-h-[calc(100vh-4rem)] p-4 sm:p-6 flex flex-col gap-4 md:ml-52" role="main">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/interns" element={<Interns />} />
