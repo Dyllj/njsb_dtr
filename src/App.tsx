@@ -1,6 +1,6 @@
 // src/App.tsx
 import { useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 import Header from './components/header/header';
 import Sidebar from './components/sidebar/sidebar';
@@ -34,7 +34,12 @@ function App() {
   }
 
   if (!session) {
-    return <AcceptInvite onLogin={login} />;
+    return (
+      <Routes>
+        <Route path="/login" element={<AcceptInvite onLogin={login} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   return (
@@ -81,6 +86,7 @@ function App() {
           <Route path="/report" element={<Report />} />
           <Route path="/qrcode" element={<QrCodePage />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/scan/:code" element={<ScanPage />} />
         </Routes>
       </main>
