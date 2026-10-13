@@ -110,10 +110,6 @@ function LoginPage({
               </p>
             )}
 
-            <div className="rounded-md bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">
-              Test admin: admin@njsb.com / admin123
-            </div>
-
             <Button
               type="submit"
               disabled={isSubmitting}
