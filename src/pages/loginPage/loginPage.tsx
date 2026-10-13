@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const DEV_ADMIN_EMAIL = 'admin@njsb.com';
-const DEV_ADMIN_PASSWORD = 'admin123';
-
 interface LoginPageProps {
   onLogin?: (email: string, password: string) => Promise<void>;
   heading?: string;
@@ -32,8 +29,8 @@ function LoginPage({
   buttonText = 'Login',
   className,
 }: LoginPageProps) {
-  const [email, setEmail] = useState(DEV_ADMIN_EMAIL);
-  const [password, setPassword] = useState(DEV_ADMIN_PASSWORD);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
